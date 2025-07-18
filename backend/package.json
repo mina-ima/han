@@ -10,5 +10,13 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": ""
+  "description": "",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "json-2-csv": "^5.5.9",
+    "moment": "^2.30.1"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19"
+  }
 }
