@@ -299,8 +299,9 @@ app.get('/api/filter/users', (req, res) => {
     res.json(filteredUsers);
 });
 app.get('/api/filter/salesSummary', (req, res) => {
+    const filteredDeliveries = filterDeliveries(req.query);
     const salesByCustomer = {};
-    masterData_1.mockDeliveries.forEach(delivery => {
+    filteredDeliveries.forEach(delivery => {
         var _a;
         const customerName = ((_a = masterData_1.customers.find(c => c.id === delivery.customerId)) === null || _a === void 0 ? void 0 : _a.name) || '不明';
         const amount = delivery.quantity * delivery.unitPrice;
@@ -310,7 +311,7 @@ app.get('/api/filter/salesSummary', (req, res) => {
         customerName,
         totalSales: salesByCustomer[customerName],
     }));
-    res.json(dataToExport);
+    res.json({ summary: dataToExport, details: filteredDeliveries });
 });
 app.listen(port, () => {
     console.log(`Backend server listening at http://localhost:${port}`);

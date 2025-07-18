@@ -309,8 +309,10 @@ app.get('/api/filter/users', (req, res) => {
 });
 
 app.get('/api/filter/salesSummary', (req, res) => {
+  const filteredDeliveries = filterDeliveries(req.query);
+
   const salesByCustomer: { [key: string]: number } = {};
-  mockDeliveries.forEach(delivery => {
+  filteredDeliveries.forEach(delivery => {
     const customerName = customers.find(c => c.id === delivery.customerId)?.name || '不明';
     const amount = delivery.quantity * delivery.unitPrice;
     salesByCustomer[customerName] = (salesByCustomer[customerName] || 0) + amount;
@@ -319,7 +321,7 @@ app.get('/api/filter/salesSummary', (req, res) => {
     customerName,
     totalSales: salesByCustomer[customerName],
   }));
-  res.json(dataToExport);
+  res.json({ summary: dataToExport, details: filteredDeliveries });
 });
 
 
