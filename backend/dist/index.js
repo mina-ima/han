@@ -1,4 +1,13 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -6,14 +15,30 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const masterData_1 = require("./data/masterData");
-const json2csv = require('json-2-csv').json2csv; // 型定義の問題を回避
+const exceljs_1 = __importDefault(require("exceljs")); // ExcelJSをインポート
 const app = (0, express_1.default)();
 const port = 3002;
 app.use((0, cors_1.default)({
     origin: 'http://localhost:3000',
 }));
-// Helper function to send data as CSV
+// Helper function to send data as Excel
+const sendExcel = (res, data, filename) => __awaiter(void 0, void 0, void 0, function* () {
+    const workbook = new exceljs_1.default.Workbook();
+    const worksheet = workbook.addWorksheet('Sheet1');
+    if (data.length > 0) {
+        // Add headers based on the keys of the first object
+        worksheet.columns = Object.keys(data[0]).map(key => ({ header: key, key: key, width: 20 }));
+        // Add rows
+        worksheet.addRows(data);
+    }
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+    yield workbook.xlsx.write(res);
+    res.end();
+});
+// Helper function to send data as CSV (既存のCSV関数は残しておくが、Excelに切り替える)
 const sendCsv = (res, data, filename) => {
+    const json2csv = require('json-2-csv').json2csv; // 型定義の問題を回避
     json2csv(data, (err, csv) => {
         if (err) {
             res.status(500).send('Error generating CSV');
@@ -260,25 +285,32 @@ const filterUsers = (query) => {
     return filteredUsers;
 };
 // CSV Export Endpoints
-app.get('/api/export/products', (req, res) => {
+app.get('/api/export/products', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log('Received export request for products.');
     const filteredProducts = filterProducts(req.query);
-    sendCsv(res, filteredProducts, 'products.csv');
-});
-app.get('/api/export/customers', (req, res) => {
+    yield sendExcel(res, filteredProducts, 'products.xlsx');
+}));
+app.get('/api/export/customers', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log('Received export request for customers.');
     const filteredCustomers = filterCustomers(req.query);
-    sendCsv(res, filteredCustomers, 'customers.csv');
-});
-app.get('/api/export/deliveries', (req, res) => {
+    yield sendExcel(res, filteredCustomers, 'customers.xlsx');
+}));
+app.get('/api/export/deliveries', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log('Received export request for deliveries.');
     const filteredDeliveries = filterDeliveries(req.query);
-    sendCsv(res, filteredDeliveries, 'deliveries.csv');
-});
-app.get('/api/export/users', (req, res) => {
+    yield sendExcel(res, filteredDeliveries, 'deliveries.xlsx');
+}));
+app.get('/api/export/users', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log('Received export request for users.');
     const filteredUsers = filterUsers(req.query);
-    sendCsv(res, filteredUsers, 'users.csv');
-});
-app.get('/api/export/salesSummary', (req, res) => {
+    yield sendExcel(res, filteredUsers, 'users.xlsx');
+}));
+app.get('/api/export/salesSummary', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log('Received export request for salesSummary.');
+    const filters = req.query;
+    const filteredDeliveries = filterDeliveries(req.query);
     const salesByCustomer = {};
-    masterData_1.mockDeliveries.forEach(delivery => {
+    filteredDeliveries.forEach(delivery => {
         var _a;
         const customerName = ((_a = masterData_1.customers.find(c => c.id === delivery.customerId)) === null || _a === void 0 ? void 0 : _a.name) || '不明';
         const amount = delivery.quantity * delivery.unitPrice;
@@ -288,8 +320,8 @@ app.get('/api/export/salesSummary', (req, res) => {
         customerName,
         totalSales: salesByCustomer[customerName],
     }));
-    sendCsv(res, dataToExport, 'sales_summary.csv');
-});
+    yield sendExcel(res, dataToExport, 'sales_summary.xlsx');
+}));
 // JSON Filter Endpoints
 app.get('/api/filter/products', (req, res) => {
     const filteredProducts = filterProducts(req.query);

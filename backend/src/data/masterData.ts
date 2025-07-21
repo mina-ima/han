@@ -12,6 +12,7 @@ export interface Product {
 export interface Customer {
   id: string;
   name: string;
+  formalName?: string; // 正式名称を追加
   address: string;
   postalCode: string; // 郵便番号
   phone: string;
@@ -65,10 +66,10 @@ export const products: Product[] = [
 
 // 仮の取引先データ
 export const customers: Customer[] = [
-  { id: 'C001', name: '株式会社X', address: '東京都', postalCode: '100-0001', phone: '03-1111-2222', closingDay: 20, paymentTerms: '翌月末', email: 'x@example.com', contactPerson: '山田太郎', invoiceDeliveryMethod: 'メール' },
-  { id: 'C002', name: '有限会社Y', address: '大阪府', postalCode: '530-0001', phone: '06-3333-4444', closingDay: 15, paymentTerms: '翌々月10日', email: 'y@example.com', contactPerson: '田中花子', invoiceDeliveryMethod: '郵送' },
-  { id: 'C003', name: '合同会社Z', address: '福岡県', postalCode: '810-0001', phone: '092-555-6666', closingDay: 30, paymentTerms: '当月末', email: 'z@example.com', contactPerson: '鈴木一郎', invoiceDeliveryMethod: 'Web' },
-  { id: 'C004', name: '赤サタな濱家らわわジェイ着', address: '東京都', postalCode: '100-0001', phone: '03-9999-8888', closingDay: 25, paymentTerms: '翌月末', email: 'test@example.com', contactPerson: 'テスト太郎', invoiceDeliveryMethod: 'メール' },
+  { id: 'C001', name: '株式会社X', formalName: '株式会社エックス', address: '東京都', postalCode: '100-0001', phone: '03-1111-2222', closingDay: 20, paymentTerms: '翌月末', email: 'x@example.com', contactPerson: '山田太郎', invoiceDeliveryMethod: 'メール' },
+  { id: 'C002', name: '有限会社Y', formalName: '有限会社ワイ', address: '大阪府', postalCode: '530-0001', phone: '06-3333-4444', closingDay: 15, paymentTerms: '翌々月10日', email: 'y@example.com', contactPerson: '田中花子', invoiceDeliveryMethod: '郵送' },
+  { id: 'C003', name: '合同会社Z', formalName: '合同会社ゼット', address: '福岡県', postalCode: '810-0001', phone: '092-555-6666', closingDay: 30, paymentTerms: '当月末', email: 'z@example.com', contactPerson: '鈴木一郎', invoiceDeliveryMethod: 'Web' },
+  { id: 'C004', name: '赤サタな濱家らわわジェイ着', formalName: 'アカサタナハマヤラワワジェイチャク', address: '東京都', postalCode: '100-0001', phone: '03-9999-8888', closingDay: 25, paymentTerms: '翌月末', email: 'test@example.com', contactPerson: 'テスト太郎', invoiceDeliveryMethod: 'メール' },
 ];
 
 // 仮の納品データ
