@@ -92,7 +92,7 @@ const filterProducts = (query) => {
 };
 // Helper function to filter deliveries
 const filterDeliveries = (query) => {
-    const { startDate, endDate, customerId, productId, minQuantity, maxQuantity, minUnitPrice, maxUnitPrice, status, salesGroup, unit, orderId, notes, minAmount, maxAmount, invoiceStatus } = query;
+    const { startDate, endDate, customerId, productId, minQuantity, maxQuantity, minUnitPrice, maxUnitPrice, status, salesGroup, unit, orderId, notes, minAmount, maxAmount, invoiceStatus, shippingAddressName, shippingPostalCode, shippingAddressDetail } = query;
     let filteredDeliveries = masterData_1.mockDeliveries;
     if (startDate) {
         filteredDeliveries = filteredDeliveries.filter(d => d.deliveryDate >= startDate);
@@ -141,6 +141,15 @@ const filterDeliveries = (query) => {
     }
     if (invoiceStatus) {
         filteredDeliveries = filteredDeliveries.filter(d => d.invoiceStatus === invoiceStatus);
+    }
+    if (shippingAddressName) {
+        filteredDeliveries = filteredDeliveries.filter(d => d.shippingAddressName && d.shippingAddressName.includes(shippingAddressName));
+    }
+    if (shippingPostalCode) {
+        filteredDeliveries = filteredDeliveries.filter(d => d.shippingPostalCode && d.shippingPostalCode.includes(shippingPostalCode));
+    }
+    if (shippingAddressDetail) {
+        filteredDeliveries = filteredDeliveries.filter(d => d.shippingAddressDetail && d.shippingAddressDetail.includes(shippingAddressDetail));
     }
     return filteredDeliveries;
 };

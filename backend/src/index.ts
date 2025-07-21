@@ -91,7 +91,8 @@ const filterProducts = (query: any) => {
 // Helper function to filter deliveries
 const filterDeliveries = (query: any) => {
   const { startDate, endDate, customerId, productId, minQuantity, maxQuantity, minUnitPrice, maxUnitPrice,
-          status, salesGroup, unit, orderId, notes, minAmount, maxAmount, invoiceStatus } = query;
+          status, salesGroup, unit, orderId, notes, minAmount, maxAmount, invoiceStatus,
+          shippingAddressName, shippingPostalCode, shippingAddressDetail } = query;
 
   let filteredDeliveries = mockDeliveries;
 
@@ -142,6 +143,15 @@ const filterDeliveries = (query: any) => {
   }
   if (invoiceStatus) {
     filteredDeliveries = filteredDeliveries.filter(d => d.invoiceStatus === invoiceStatus);
+  }
+  if (shippingAddressName) {
+    filteredDeliveries = filteredDeliveries.filter(d => d.shippingAddressName && d.shippingAddressName.includes(shippingAddressName));
+  }
+  if (shippingPostalCode) {
+    filteredDeliveries = filteredDeliveries.filter(d => d.shippingPostalCode && d.shippingPostalCode.includes(shippingPostalCode));
+  }
+  if (shippingAddressDetail) {
+    filteredDeliveries = filteredDeliveries.filter(d => d.shippingAddressDetail && d.shippingAddressDetail.includes(shippingAddressDetail));
   }
   return filteredDeliveries;
 };
