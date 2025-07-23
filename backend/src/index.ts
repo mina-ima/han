@@ -1,7 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import { products as initialProducts, customers as initialCustomers, mockDeliveries, users } from './data/masterData';
-import { Product, Customer, Delivery } from './data/masterData';
+import { Product, Customer, Delivery, User } from './data/masterData';
 import { Request } from 'express';
 
 // カスタムリクエスト型を定義してreq.fileを認識させる
@@ -9,7 +8,7 @@ interface CustomRequest extends Request {
   file?: Express.Multer.File;
 }
 
-let customers: Customer[] = [...initialCustomers];
+let customers: Customer[] = [];
 import ExcelJS from 'exceljs';
 import fs from 'fs';
 import path from 'path';
@@ -47,7 +46,8 @@ interface Invoice {
 // データストレージ
 let invoices: Invoice[] = [];
 let deliveries: Delivery[] = [];
-let products: Product[] = [...initialProducts]; // products配列を初期化
+let products: Product[] = [];
+let users: User[] = [];
 let currentVoucherNumber = 1;
 
 // データをファイルから読み込む関数
@@ -55,25 +55,27 @@ const loadData = () => {
   try {
     if (fs.existsSync(invoicesFilePath)) {
       const invoicesData = fs.readFileSync(invoicesFilePath, 'utf-8');
-      invoices = JSON.parse(invoicesData);
+      invoices = invoicesData ? JSON.parse(invoicesData) : [];
+    } else {
+      invoices = [];
     }
     if (fs.existsSync(deliveriesFilePath)) {
       const deliveriesData = fs.readFileSync(deliveriesFilePath, 'utf-8');
-      deliveries = JSON.parse(deliveriesData);
+      deliveries = deliveriesData ? JSON.parse(deliveriesData) : [];
     } else {
-      deliveries = [...mockDeliveries];
+      deliveries = [];
     }
     if (fs.existsSync(customersFilePath)) {
       const customersData = fs.readFileSync(customersFilePath, 'utf-8');
-      customers = JSON.parse(customersData);
+      customers = customersData ? JSON.parse(customersData) : [];
     } else {
-      customers = [...initialCustomers];
+      customers = [];
     }
     if (fs.existsSync(productsFilePath)) {
       const productsData = fs.readFileSync(productsFilePath, 'utf-8');
-      products = JSON.parse(productsData);
+      products = productsData ? JSON.parse(productsData) : [];
     } else {
-      products = [...initialProducts]; // masterData.tsから初期データをロード
+      products = [];
     }
 
     // Update currentVoucherNumber to avoid duplicates
@@ -360,21 +362,21 @@ const filterUsers = (query: any) => {
   if (username) {
     const matchType = username_matchType || 'partial';
     if (matchType === 'exact') {
-      filteredUsers = filteredUsers.filter(u => u.username === username);
+      filteredUsers = filteredUsers.filter((u: User) => u.username === username);
     } else { // partial
-      filteredUsers = filteredUsers.filter(u => u.username.includes(username));
+      filteredUsers = filteredUsers.filter((u: User) => u.username.includes(username));
     }
   }
   if (email) {
     const matchType = email_matchType || 'partial';
     if (matchType === 'exact') {
-      filteredUsers = filteredUsers.filter(u => u.email === email);
+      filteredUsers = filteredUsers.filter((u: User) => u.email === email);
     } else { // partial
-      filteredUsers = filteredUsers.filter(u => u.email.includes(email));
+      filteredUsers = filteredUsers.filter((u: User) => u.email.includes(email));
     }
   }
   if (role) {
-    filteredUsers = filteredUsers.filter(u => u.role === role);
+    filteredUsers = filteredUsers.filter((u: User) => u.role === role);
   }
   return filteredUsers;
 };
@@ -940,16 +942,79 @@ app.delete('/api/products/:id', (req, res) => {
   }
 });
 
-app.delete('/api/products/:id', (req, res) => {
+app.delete('/api/deliveries/:id', (req, res) => {
   const { id } = req.params;
-  const initialLength = products.length;
-  products = products.filter(product => product.id !== id);
-  if (products.length < initialLength) {
+  const initialLength = deliveries.length;
+  deliveries = deliveries.filter(delivery => delivery.id !== id);
+  if (deliveries.length < initialLength) {
     saveData();
-    res.status(200).json({ message: 'Product deleted successfully.' });
+    res.status(200).json({ message: 'Delivery deleted successfully.' });
   } else {
-    res.status(404).json({ message: 'Product not found.' });
+    res.status(404).json({ message: 'Delivery not found.' });
   }
+});
+
+app.delete('/api/deliveries/:id', (req, res) => {
+  const { id } = req.params;
+  const initialLength = deliveries.length;
+  deliveries = deliveries.filter(delivery => delivery.id !== id);
+  if (deliveries.length < initialLength) {
+    saveData();
+    res.status(200).json({ message: 'Delivery deleted successfully.' });
+  } else {
+    res.status(404).json({ message: 'Delivery not found.' });
+  }
+});
+
+// Reset Endpoints
+app.delete('/api/reset/products', (req, res) => {
+  products = [];
+  try {
+    fs.unlinkSync(productsFilePath);
+  } catch (error) {
+    console.error('Error deleting products.json:', error);
+  }
+  saveData();
+  res.status(200).json({ message: 'Products data reset successfully.' });
+});
+
+app.delete('/api/reset/customers', (req, res) => {
+  customers = [];
+  try {
+    fs.unlinkSync(customersFilePath);
+  } catch (error) {
+    console.error('Error deleting customers.json:', error);
+  }
+  saveData();
+  res.status(200).json({ message: 'Customers data reset successfully.' });
+});
+
+app.delete('/api/reset/deliveries', (req, res) => {
+  deliveries = [];
+  try {
+    fs.unlinkSync(deliveriesFilePath);
+  } catch (error) {
+    console.error('Error deleting deliveries.json:', error);
+  }
+  saveData();
+  res.status(200).json({ message: 'Deliveries data reset successfully.' });
+});
+
+app.delete('/api/reset/invoices', (req, res) => {
+  invoices = []; // 請求書にはモックデータがないため空にする
+  try {
+    fs.unlinkSync(invoicesFilePath);
+  } catch (error) {
+    console.error('Error deleting invoices.json:', error);
+  }
+  saveData();
+  res.status(200).json({ message: 'Invoices data reset successfully.' });
+});
+
+app.delete('/api/reset/users', (req, res) => {
+  // ユーザーデータは通常リセットしないが、必要であれば実装
+  // users = [...initialUsers]; // initialUsers が定義されていれば
+  res.status(200).json({ message: 'Users data reset is not typically allowed or implemented this way.' });
 });
 
 app.post('/api/import/deliveries', upload.single('file'), async (req: CustomRequest, res) => {
@@ -996,11 +1061,13 @@ app.post('/api/import/deliveries', upload.single('file'), async (req: CustomRequ
             unit: deliveryData.unit || (product ? product.unit : ''),
           };
 
-          if (deliveriesMap[deliveryData.id]) {
-            deliveriesMap[deliveryData.id].items.push(newItem);
+          const deliveryId = deliveryData.id || String(Math.max(...deliveries.map(d => parseInt(d.id || '0')), 0) + 1); // IDがない場合は自動生成
+
+          if (deliveriesMap[deliveryId]) {
+            deliveriesMap[deliveryId].items.push(newItem);
           } else {
-            deliveriesMap[deliveryData.id] = {
-              id: deliveryData.id,
+            deliveriesMap[deliveryId] = {
+              id: deliveryId,
               voucherNumber: deliveryData.voucherNumber,
               deliveryDate: deliveryData.deliveryDate,
               customerId: customer ? customer.id : '',

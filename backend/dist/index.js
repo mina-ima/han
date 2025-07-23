@@ -14,8 +14,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
-const masterData_1 = require("./data/masterData");
-let customers = [...masterData_1.customers];
+let customers = [];
 const exceljs_1 = __importDefault(require("exceljs"));
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
@@ -36,35 +35,39 @@ const upload = (0, multer_1.default)({ dest: 'uploads/' });
 // データストレージ
 let invoices = [];
 let deliveries = [];
-let products = [...masterData_1.products]; // products配列を初期化
+let products = [];
+let users = [];
 let currentVoucherNumber = 1;
 // データをファイルから読み込む関数
 const loadData = () => {
     try {
         if (fs_1.default.existsSync(invoicesFilePath)) {
             const invoicesData = fs_1.default.readFileSync(invoicesFilePath, 'utf-8');
-            invoices = JSON.parse(invoicesData);
+            invoices = invoicesData ? JSON.parse(invoicesData) : [];
+        }
+        else {
+            invoices = [];
         }
         if (fs_1.default.existsSync(deliveriesFilePath)) {
             const deliveriesData = fs_1.default.readFileSync(deliveriesFilePath, 'utf-8');
-            deliveries = JSON.parse(deliveriesData);
+            deliveries = deliveriesData ? JSON.parse(deliveriesData) : [];
         }
         else {
-            deliveries = [...masterData_1.mockDeliveries];
+            deliveries = [];
         }
         if (fs_1.default.existsSync(customersFilePath)) {
             const customersData = fs_1.default.readFileSync(customersFilePath, 'utf-8');
-            customers = JSON.parse(customersData);
+            customers = customersData ? JSON.parse(customersData) : [];
         }
         else {
-            customers = [...masterData_1.customers];
+            customers = [];
         }
         if (fs_1.default.existsSync(productsFilePath)) {
             const productsData = fs_1.default.readFileSync(productsFilePath, 'utf-8');
-            products = JSON.parse(productsData);
+            products = productsData ? JSON.parse(productsData) : [];
         }
         else {
-            products = [...masterData_1.products]; // masterData.tsから初期データをロード
+            products = [];
         }
         // Update currentVoucherNumber to avoid duplicates
         const maxInvoiceVoucher = Math.max(...invoices.map(i => parseInt(i.voucherNumber.substring(1))), 0);
@@ -332,27 +335,27 @@ const filterCustomers = (query) => {
 // Helper function to filter users
 const filterUsers = (query) => {
     const { username, username_matchType, email, email_matchType, role } = query;
-    let filteredUsers = masterData_1.users;
+    let filteredUsers = users;
     if (username) {
         const matchType = username_matchType || 'partial';
         if (matchType === 'exact') {
-            filteredUsers = filteredUsers.filter(u => u.username === username);
+            filteredUsers = filteredUsers.filter((u) => u.username === username);
         }
         else { // partial
-            filteredUsers = filteredUsers.filter(u => u.username.includes(username));
+            filteredUsers = filteredUsers.filter((u) => u.username.includes(username));
         }
     }
     if (email) {
         const matchType = email_matchType || 'partial';
         if (matchType === 'exact') {
-            filteredUsers = filteredUsers.filter(u => u.email === email);
+            filteredUsers = filteredUsers.filter((u) => u.email === email);
         }
         else { // partial
-            filteredUsers = filteredUsers.filter(u => u.email.includes(email));
+            filteredUsers = filteredUsers.filter((u) => u.email.includes(email));
         }
     }
     if (role) {
-        filteredUsers = filteredUsers.filter(u => u.role === role);
+        filteredUsers = filteredUsers.filter((u) => u.role === role);
     }
     return filteredUsers;
 };
@@ -879,17 +882,79 @@ app.delete('/api/products/:id', (req, res) => {
         res.status(404).json({ message: 'Product not found.' });
     }
 });
-app.delete('/api/products/:id', (req, res) => {
+app.delete('/api/deliveries/:id', (req, res) => {
     const { id } = req.params;
-    const initialLength = products.length;
-    products = products.filter(product => product.id !== id);
-    if (products.length < initialLength) {
+    const initialLength = deliveries.length;
+    deliveries = deliveries.filter(delivery => delivery.id !== id);
+    if (deliveries.length < initialLength) {
         saveData();
-        res.status(200).json({ message: 'Product deleted successfully.' });
+        res.status(200).json({ message: 'Delivery deleted successfully.' });
     }
     else {
-        res.status(404).json({ message: 'Product not found.' });
+        res.status(404).json({ message: 'Delivery not found.' });
     }
+});
+app.delete('/api/deliveries/:id', (req, res) => {
+    const { id } = req.params;
+    const initialLength = deliveries.length;
+    deliveries = deliveries.filter(delivery => delivery.id !== id);
+    if (deliveries.length < initialLength) {
+        saveData();
+        res.status(200).json({ message: 'Delivery deleted successfully.' });
+    }
+    else {
+        res.status(404).json({ message: 'Delivery not found.' });
+    }
+});
+// Reset Endpoints
+app.delete('/api/reset/products', (req, res) => {
+    products = [];
+    try {
+        fs_1.default.unlinkSync(productsFilePath);
+    }
+    catch (error) {
+        console.error('Error deleting products.json:', error);
+    }
+    saveData();
+    res.status(200).json({ message: 'Products data reset successfully.' });
+});
+app.delete('/api/reset/customers', (req, res) => {
+    customers = [];
+    try {
+        fs_1.default.unlinkSync(customersFilePath);
+    }
+    catch (error) {
+        console.error('Error deleting customers.json:', error);
+    }
+    saveData();
+    res.status(200).json({ message: 'Customers data reset successfully.' });
+});
+app.delete('/api/reset/deliveries', (req, res) => {
+    deliveries = [];
+    try {
+        fs_1.default.unlinkSync(deliveriesFilePath);
+    }
+    catch (error) {
+        console.error('Error deleting deliveries.json:', error);
+    }
+    saveData();
+    res.status(200).json({ message: 'Deliveries data reset successfully.' });
+});
+app.delete('/api/reset/invoices', (req, res) => {
+    invoices = []; // 請求書にはモックデータがないため空にする
+    try {
+        fs_1.default.unlinkSync(invoicesFilePath);
+    }
+    catch (error) {
+        console.error('Error deleting invoices.json:', error);
+    }
+    saveData();
+    res.status(200).json({ message: 'Invoices data reset successfully.' });
+});
+app.delete('/api/reset/users', (req, res) => {
+    // ユーザーデータは通常リセットしないが、必要であれば実装
+    // users = [...initialUsers]; // initialUsers が定義されていれば
+    res.status(200).json({ message: 'Users data reset is not typically allowed or implemented this way.' });
 });
 app.post('/api/import/deliveries', upload.single('file'), (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     if (!req.file) {
@@ -929,12 +994,13 @@ app.post('/api/import/deliveries', upload.single('file'), (req, res) => __awaite
                         unitPrice: parseFloat(deliveryData.unitPrice || '0'),
                         unit: deliveryData.unit || (product ? product.unit : ''),
                     };
-                    if (deliveriesMap[deliveryData.id]) {
-                        deliveriesMap[deliveryData.id].items.push(newItem);
+                    const deliveryId = deliveryData.id || String(Math.max(...deliveries.map(d => parseInt(d.id || '0')), 0) + 1); // IDがない場合は自動生成
+                    if (deliveriesMap[deliveryId]) {
+                        deliveriesMap[deliveryId].items.push(newItem);
                     }
                     else {
-                        deliveriesMap[deliveryData.id] = {
-                            id: deliveryData.id,
+                        deliveriesMap[deliveryId] = {
+                            id: deliveryId,
                             voucherNumber: deliveryData.voucherNumber,
                             deliveryDate: deliveryData.deliveryDate,
                             customerId: customer ? customer.id : '',

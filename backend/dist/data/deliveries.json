@@ -162,19 +162,6 @@
     "shippingAddressDetail": "奈良県奈良市内侍原町12-2"
   },
   {
-    "deliveryDate": "Mon Jul 21 2025 09:00:00 GMT+0900 (日本標準時)",
-    "items": [
-      {
-        "quantity": 64,
-        "unitPrice": 423.98,
-        "unit": "ｼｰﾄ"
-      }
-    ],
-    "notes": "4451 270598",
-    "shippingAddressName": "[object Object]",
-    "shippingAddressDetail": "[object Object]"
-  },
-  {
     "id": "10",
     "voucherNumber": "V00010",
     "deliveryDate": "2024-9-2",
@@ -69887,23 +69874,5 @@
     "shippingAddressName": "(株)まほら舎　電子事業部  ",
     "shippingPostalCode": "630-8253",
     "shippingAddressDetail": "奈良県奈良市内侍原町12-2"
-  },
-  {
-    "id": "3885",
-    "voucherNumber": "V00001",
-    "customerId": "C048",
-    "deliveryDate": "2025-08-01",
-    "items": [
-      {
-        "productId": "P3979",
-        "quantity": 99999,
-        "unitPrice": 152,
-        "unit": "シート",
-        "notes": ""
-      }
-    ],
-    "notes": "",
-    "status": "未発行",
-    "invoiceStatus": "未請求"
   }
 ]
