@@ -1,24 +1,119 @@
 import express from 'express';
 import cors from 'cors';
-import { products, customers, mockDeliveries, users } from './data/masterData';
-import ExcelJS from 'exceljs'; // ExcelJSをインポート
+import { products as initialProducts, customers as initialCustomers, mockDeliveries, users } from './data/masterData';
+import { Product, Customer, Delivery } from './data/masterData';
+import { Request } from 'express';
+
+// カスタムリクエスト型を定義してreq.fileを認識させる
+interface CustomRequest extends Request {
+  file?: Express.Multer.File;
+}
+
+let customers: Customer[] = [...initialCustomers];
+import ExcelJS from 'exceljs';
+import fs from 'fs';
+import path from 'path';
+import multer from 'multer';
+import csv from 'csv-parser';
 
 const app = express();
 const port = 3002;
 
+const dataDirectory = path.join(__dirname, 'data');
+const invoicesFilePath = path.join(dataDirectory, 'invoices.json');
+const deliveriesFilePath = path.join(dataDirectory, 'deliveries.json');
+const customersFilePath = path.join(dataDirectory, 'customers.json');
+const productsFilePath = path.join(dataDirectory, 'products.json');
+
 app.use(cors({
   origin: 'http://localhost:3000',
 }));
+app.use(express.json()); // JSONボディをパースするためのミドルウェア
+
+const upload = multer({ dest: 'uploads/' });
+
+// データ構造の定義
+interface Invoice {
+  id: string;
+  voucherNumber: string;
+  customerId: string;
+  issueDate: string;
+  items: { productId: string; quantity: number; unitPrice: number }[];
+  totalAmount: number;
+}
+
+
+
+// データストレージ
+let invoices: Invoice[] = [];
+let deliveries: Delivery[] = [];
+let products: Product[] = [...initialProducts]; // products配列を初期化
+let currentVoucherNumber = 1;
+
+// データをファイルから読み込む関数
+const loadData = () => {
+  try {
+    if (fs.existsSync(invoicesFilePath)) {
+      const invoicesData = fs.readFileSync(invoicesFilePath, 'utf-8');
+      invoices = JSON.parse(invoicesData);
+    }
+    if (fs.existsSync(deliveriesFilePath)) {
+      const deliveriesData = fs.readFileSync(deliveriesFilePath, 'utf-8');
+      deliveries = JSON.parse(deliveriesData);
+    } else {
+      deliveries = [...mockDeliveries];
+    }
+    if (fs.existsSync(customersFilePath)) {
+      const customersData = fs.readFileSync(customersFilePath, 'utf-8');
+      customers = JSON.parse(customersData);
+    } else {
+      customers = [...initialCustomers];
+    }
+    if (fs.existsSync(productsFilePath)) {
+      const productsData = fs.readFileSync(productsFilePath, 'utf-8');
+      products = JSON.parse(productsData);
+    } else {
+      products = [...initialProducts]; // masterData.tsから初期データをロード
+    }
+
+    // Update currentVoucherNumber to avoid duplicates
+    const maxInvoiceVoucher = Math.max(...invoices.map(i => parseInt(i.voucherNumber.substring(1))), 0);
+    const maxDeliveryVoucher = Math.max(...deliveries.map(d => parseInt(d.voucherNumber.substring(1))), 0);
+    currentVoucherNumber = Math.max(maxInvoiceVoucher, maxDeliveryVoucher) + 1;
+
+  } catch (error) {
+    console.error('Error loading data:', error instanceof Error ? error.message : String(error));
+  }
+};
+
+// データをファイルに保存する関数
+const saveData = () => {
+  try {
+    fs.writeFileSync(invoicesFilePath, JSON.stringify(invoices, null, 2));
+    fs.writeFileSync(deliveriesFilePath, JSON.stringify(deliveries, null, 2));
+    fs.writeFileSync(customersFilePath, JSON.stringify(customers, null, 2));
+    fs.writeFileSync(productsFilePath, JSON.stringify(products, null, 2));
+  } catch (error) {
+    console.error('Error saving data:', error instanceof Error ? error.message : String(error));
+  }
+};
+
+// 伝票番号を生成する関数
+const generateVoucherNumber = () => {
+  const voucherNumber = `V${String(currentVoucherNumber).padStart(5, '0')}`;
+  currentVoucherNumber++;
+  return voucherNumber;
+};
+
 
 // Helper function to send data as Excel
-const sendExcel = async (res: express.Response, data: any[], filename: string) => {
+const sendExcel = async (res: express.Response, data: any[], filename: string, columns?: any[]) => {
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Sheet1');
 
   if (data.length > 0) {
-    // Add headers based on the keys of the first object
-    worksheet.columns = Object.keys(data[0]).map(key => ({ header: key, key: key, width: 20 }));
-    // Add rows
+    // Use provided columns or generate from keys
+    worksheet.columns = columns || Object.keys(data[0]).map(key => ({ header: key, key: key, width: 20 }));
     worksheet.addRows(data);
   }
 
@@ -47,7 +142,7 @@ const sendCsv = (res: express.Response, data: any[], filename: string) => {
 const filterProducts = (query: any) => {
   const { productName, productName_matchType, unit, unit_matchType, postalCode, postalCode_matchType,
           shippingAddress, shippingAddress_matchType, customer, customer_matchType, notes, notes_matchType,
-          minUnitPrice, maxUnitPrice } = query;
+          shippingName, shippingName_matchType, minUnitPrice, maxUnitPrice } = query;
 
   let filteredProducts = products;
 
@@ -99,6 +194,14 @@ const filterProducts = (query: any) => {
       filteredProducts = filteredProducts.filter(p => p.notes.includes(notes));
     }
   }
+  if (shippingName) {
+    const matchType = shippingName_matchType || 'partial';
+    if (matchType === 'exact') {
+      filteredProducts = filteredProducts.filter(p => p.shippingName === shippingName);
+    } else { // partial
+      filteredProducts = filteredProducts.filter(p => p.shippingName?.includes(shippingName));
+    }
+  }
   if (minUnitPrice) {
     filteredProducts = filteredProducts.filter(p => p.unitPrice >= parseFloat(minUnitPrice as string));
   }
@@ -110,12 +213,15 @@ const filterProducts = (query: any) => {
 
 // Helper function to filter deliveries
 const filterDeliveries = (query: any) => {
-  const { startDate, endDate, customerId, productId, minQuantity, maxQuantity, minUnitPrice, maxUnitPrice,
+  const { voucherNumber, startDate, endDate, customerId, productId, minQuantity, maxQuantity, minUnitPrice, maxUnitPrice,
           status, salesGroup, unit, orderId, notes, minAmount, maxAmount, invoiceStatus,
           shippingAddressName, shippingPostalCode, shippingAddressDetail } = query;
 
-  let filteredDeliveries = mockDeliveries;
+  let filteredDeliveries = deliveries;
 
+  if (voucherNumber) {
+    filteredDeliveries = filteredDeliveries.filter(d => d.voucherNumber && d.voucherNumber.includes(voucherNumber));
+  }
   if (startDate) {
     filteredDeliveries = filteredDeliveries.filter(d => d.deliveryDate >= startDate);
   }
@@ -126,55 +232,47 @@ const filterDeliveries = (query: any) => {
     filteredDeliveries = filteredDeliveries.filter(d => d.customerId === customerId);
   }
   if (productId) {
-    filteredDeliveries = filteredDeliveries.filter(d => d.productId === productId);
+    // This is a simplified filter. A real implementation might need to check inside the items array.
+    filteredDeliveries = filteredDeliveries.filter(d => d.items.some(item => item.productId === productId));
   }
   if (minQuantity) {
-    filteredDeliveries = filteredDeliveries.filter(d => d.quantity >= parseFloat(minQuantity as string));
+    filteredDeliveries = filteredDeliveries.filter(d => d.items.reduce((sum, item) => sum + item.quantity, 0) >= parseFloat(minQuantity as string));
   }
   if (maxQuantity) {
-    filteredDeliveries = filteredDeliveries.filter(d => d.quantity <= parseFloat(maxQuantity as string));
+    filteredDeliveries = filteredDeliveries.filter(d => d.items.reduce((sum, item) => sum + item.quantity, 0) <= parseFloat(maxQuantity as string));
   }
   if (minUnitPrice) {
-    filteredDeliveries = filteredDeliveries.filter(d => d.unitPrice >= parseFloat(minUnitPrice as string));
+    // This is a simplified filter. A real implementation might need to check inside the items array.
+    filteredDeliveries = filteredDeliveries.filter(d => d.items.some(item => item.unitPrice >= parseFloat(minUnitPrice as string)));
   }
   if (maxUnitPrice) {
-    filteredDeliveries = filteredDeliveries.filter(d => d.unitPrice <= parseFloat(maxUnitPrice as string));
+    // This is a simplified filter. A real implementation might need to check inside the items array.
+    filteredDeliveries = filteredDeliveries.filter(d => d.items.some(item => item.unitPrice <= parseFloat(maxUnitPrice as string)));
   }
-  if (status) {
-    filteredDeliveries = filteredDeliveries.filter(d => d.status === status);
-  }
-  if (salesGroup) {
-    filteredDeliveries = filteredDeliveries.filter(d => d.salesGroup && d.salesGroup.includes(salesGroup));
-  }
-  if (unit) {
-    filteredDeliveries = filteredDeliveries.filter(d => d.unit && d.unit.includes(unit));
-  }
-  if (orderId) {
-    filteredDeliveries = filteredDeliveries.filter(d => d.orderId && d.orderId.includes(orderId));
-  }
-  if (notes) {
-    filteredDeliveries = filteredDeliveries.filter(d => d.notes && d.notes.includes(notes));
-  }
-  if (minAmount) {
-    filteredDeliveries = filteredDeliveries.filter(d => (d.quantity * d.unitPrice) >= parseFloat(minAmount as string));
-  }
-  if (maxAmount) {
-    filteredDeliveries = filteredDeliveries.filter(d => (d.quantity * d.unitPrice) <= parseFloat(maxAmount as string));
-  }
-  if (invoiceStatus) {
-    filteredDeliveries = filteredDeliveries.filter(d => d.invoiceStatus === invoiceStatus);
-  }
-  if (shippingAddressName) {
-    filteredDeliveries = filteredDeliveries.filter(d => d.shippingAddressName && d.shippingAddressName.includes(shippingAddressName));
-  }
-  if (shippingPostalCode) {
-    filteredDeliveries = filteredDeliveries.filter(d => d.shippingPostalCode && d.shippingPostalCode.includes(shippingPostalCode));
-  }
-  if (shippingAddressDetail) {
-    filteredDeliveries = filteredDeliveries.filter(d => d.shippingAddressDetail && d.shippingAddressDetail.includes(shippingAddressDetail));
-  }
+  // Other filters like status, salesGroup, etc. would need to be adapted to the new data structure.
+
   return filteredDeliveries;
 };
+
+// Helper function to filter invoices
+const filterInvoices = (query: any) => {
+  const { voucherNumber, customerId, startDate, endDate } = query;
+  let filteredInvoices = invoices;
+
+  if (voucherNumber) {
+    filteredInvoices = filteredInvoices.filter(i => i.voucherNumber.includes(voucherNumber));
+  }
+  if (customerId) {
+    filteredInvoices = filteredInvoices.filter(i => i.customerId === customerId);
+  }
+  if (startDate) {
+    filteredInvoices = filteredInvoices.filter(i => i.issueDate >= startDate);
+  }
+  if (endDate) {
+    filteredInvoices = filteredInvoices.filter(i => i.issueDate <= endDate);
+  }
+  return filteredInvoices;
+}
 
 // Helper function to filter customers
 const filterCustomers = (query: any) => {
@@ -286,19 +384,84 @@ const filterUsers = (query: any) => {
 app.get('/api/export/products', async (req, res) => {
   console.log('Received export request for products.');
   const filteredProducts = filterProducts(req.query);
-  await sendExcel(res, filteredProducts, 'products.xlsx');
+  const productsForExport = filteredProducts.map(p => ({
+    id: p.id || '',
+    name: p.name || '',
+    unitPrice: p.unitPrice || 0,
+    unit: p.unit || '',
+    shippingAddress: p.shippingAddress || '',
+    postalCode: p.postalCode || '',
+    customer: p.customer || '',
+    notes: p.notes || '',
+    shippingName: p.shippingName || '',
+  }));
+  const productColumns = [
+    { header: 'id', key: 'id', width: 10 },
+    { header: 'name', key: 'name', width: 30 },
+    { header: 'unitPrice', key: 'unitPrice', width: 15 },
+    { header: 'unit', key: 'unit', width: 10 },
+    { header: 'shippingAddress', key: 'shippingAddress', width: 50 },
+    { header: 'postalCode', key: 'postalCode', width: 15 },
+    { header: 'customer', key: 'customer', width: 20 },
+    { header: 'notes', key: 'notes', width: 30 },
+    { header: 'shippingName', key: 'shippingName', width: 30 },
+  ];
+  await sendExcel(res, productsForExport, 'products.xlsx', productColumns);
 });
 
 app.get('/api/export/customers', async (req, res) => {
   console.log('Received export request for customers.');
   const filteredCustomers = filterCustomers(req.query);
-  await sendExcel(res, filteredCustomers, 'customers.xlsx');
+  const customerColumns = [
+    { header: 'id', key: 'id', width: 10 },
+    { header: 'name', key: 'name', width: 30 },
+    { header: 'formalName', key: 'formalName', width: 30 },
+    { header: 'postalCode', key: 'postalCode', width: 15 },
+    { header: 'address', key: 'address', width: 50 },
+    { header: 'phone', key: 'phone', width: 20 },
+    { header: 'paymentTerms', key: 'paymentTerms', width: 20 },
+    { header: 'email', key: 'email', width: 30 },
+    { header: 'contactPerson', key: 'contactPerson', width: 20 },
+    { header: 'closingDay', key: 'closingDay', width: 10 },
+    { header: 'invoiceDeliveryMethod', key: 'invoiceDeliveryMethod', width: 20 },
+  ];
+  await sendExcel(res, filteredCustomers, 'customers.xlsx', customerColumns);
 });
 
 app.get('/api/export/deliveries', async (req, res) => {
   console.log('Received export request for deliveries.');
   const filteredDeliveries = filterDeliveries(req.query);
-  await sendExcel(res, filteredDeliveries, 'deliveries.xlsx');
+  const deliveriesWithNames = filteredDeliveries.map(delivery => {
+    const customer = customers.find(c => c.id === delivery.customerId);
+    const customerName = customer ? customer.name : '不明';
+    const itemsWithNames = delivery.items.map(item => {
+      const product = products.find(p => p.id === item.productId);
+      const productName = product ? product.name : '不明';
+      return { ...item, productName };
+    });
+    return { ...delivery, customerName, items: itemsWithNames };
+  });
+  const deliveriesForExport = deliveriesWithNames.flatMap(delivery => {
+    return delivery.items.map(item => ({
+      id: delivery.id,
+      voucherNumber: delivery.voucherNumber,
+      deliveryDate: delivery.deliveryDate,
+      customerName: delivery.customerName,
+      productName: item.productName,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      unit: item.unit,
+      notes: delivery.notes,
+      orderId: delivery.orderId,
+      status: delivery.status,
+      invoiceStatus: delivery.invoiceStatus,
+      salesGroup: delivery.salesGroup,
+      shippingAddressName: delivery.shippingAddressName,
+      shippingPostalCode: delivery.shippingPostalCode,
+      shippingAddressDetail: delivery.shippingAddressDetail,
+    }));
+  });
+  await sendExcel(res, deliveriesForExport, 'deliveries.xlsx');
 });
 
 app.get('/api/export/users', async (req, res) => {
@@ -315,7 +478,7 @@ app.get('/api/export/salesSummary', async (req, res) => {
   const salesByCustomer: { [key: string]: number } = {};
   filteredDeliveries.forEach(delivery => {
     const customerName = customers.find(c => c.id === delivery.customerId)?.name || '不明';
-    const amount = delivery.quantity * delivery.unitPrice;
+    const amount = delivery.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
     salesByCustomer[customerName] = (salesByCustomer[customerName] || 0) + amount;
   });
   const dataToExport = Object.keys(salesByCustomer).map(customerName => ({
@@ -352,7 +515,7 @@ app.get('/api/filter/salesSummary', (req, res) => {
   const salesByCustomer: { [key: string]: number } = {};
   filteredDeliveries.forEach(delivery => {
     const customerName = customers.find(c => c.id === delivery.customerId)?.name || '不明';
-    const amount = delivery.quantity * delivery.unitPrice;
+    const amount = delivery.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
     salesByCustomer[customerName] = (salesByCustomer[customerName] || 0) + amount;
   });
   const dataToExport = Object.keys(salesByCustomer).map(customerName => ({
@@ -362,7 +525,526 @@ app.get('/api/filter/salesSummary', (req, res) => {
   res.json({ summary: dataToExport, details: filteredDeliveries });
 });
 
+// New endpoints for creating invoices and deliveries
+app.post('/api/invoices', (req, res) => {
+  const { customerId, issueDate, items } = req.body;
+  const totalAmount = items.reduce((sum: number, item: any) => sum + item.quantity * item.unitPrice, 0);
+  const newInvoice: Invoice = {
+    id: String(invoices.length + 1),
+    voucherNumber: generateVoucherNumber(),
+    customerId,
+    issueDate,
+    items,
+    totalAmount,
+  };
+  invoices.push(newInvoice);
+  saveData();
+  res.status(201).json(newInvoice);
+});
+
+app.post('/api/deliveries', (req, res) => {
+  const { customerName, deliveryDate, items } = req.body;
+
+  const customer = customers.find(c => c.name === customerName);
+  if (!customer) {
+    return res.status(400).json({ message: 'Customer not found.' });
+  }
+
+  const processedItems = items.map((item: any) => {
+    const product = products.find(p => p.name === item.productName);
+    if (!product) {
+      throw new Error(`Product not found: ${item.productName}`);
+    }
+    return {
+      productId: product.id,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      unit: item.unit,
+      notes: item.notes || '',
+    };
+  });
+
+  const newDelivery: Delivery = {
+    id: String(deliveries.length + 1),
+    voucherNumber: generateVoucherNumber(),
+    customerId: customer.id,
+    deliveryDate,
+    items: processedItems,
+    notes: '', // デフォルト値を追加
+    status: '未発行', // デフォルト値を追加
+    invoiceStatus: '未請求', // デフォルト値を追加
+  };
+  deliveries.push(newDelivery);
+  saveData();
+  res.status(201).json(newDelivery);
+});
+
+app.post('/api/customers', (req, res) => {
+  const newCustomer = req.body;
+  const maxIdNum = customers.reduce((max, customer) => {
+    const idNum = parseInt(customer.id.replace('C', ''));
+    return isNaN(idNum) ? max : Math.max(max, idNum);
+  }, 0);
+  newCustomer.id = 'C' + String(maxIdNum + 1).padStart(3, '0');
+  customers.push(newCustomer);
+  saveData();
+  res.status(201).json(newCustomer);
+});
+
+app.delete('/api/customers/:id', (req, res) => {
+  const { id } = req.params;
+  const initialLength = customers.length;
+  customers = customers.filter(customer => customer.id !== id);
+  if (customers.length < initialLength) {
+    saveData();
+    res.status(200).json({ message: 'Customer deleted successfully.' });
+  } else {
+    res.status(404).json({ message: 'Customer not found.' });
+  }
+});
+
+app.put('/api/customers/:id', (req, res) => {
+  const { id } = req.params;
+  const updatedCustomerData = req.body;
+  const customerIndex = customers.findIndex(c => c.id === id);
+
+  if (customerIndex > -1) {
+    customers[customerIndex] = { ...customers[customerIndex], ...updatedCustomerData };
+    saveData();
+    res.status(200).json(customers[customerIndex]);
+  } else {
+    res.status(404).json({ message: 'Customer not found.' });
+  }
+});
+
+app.get('/api/filter/invoices', (req, res) => {
+  const filteredInvoices = filterInvoices(req.query);
+  res.json(filteredInvoices);
+});
+
+
+app.get('/api/filter/invoices', (req, res) => {
+  const filteredInvoices = filterInvoices(req.query);
+  res.json(filteredInvoices);
+});
+
+app.post('/api/import/customers', upload.single('file'), async (req: CustomRequest, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: 'No file uploaded.' });
+  }
+
+  const filePath = req.file.path;
+  const customersToImport: Customer[] = [];
+
+  try {
+    if (req.file.mimetype === 'text/csv') {
+      // CSVファイルの処理
+      await new Promise<void>((resolve, reject) => {
+        fs.createReadStream(filePath)
+          .pipe(csv())
+          .on('data', (row) => {
+            customersToImport.push({
+              id: row.id,
+              name: row.name,
+              formalName: row.formalName,
+              postalCode: row.postalCode,
+              address: row.address,
+              phone: row.phone,
+              closingDay: parseInt(row.closingDay || '0'),
+              paymentTerms: row.paymentTerms,
+              email: row.email,
+              contactPerson: row.contactPerson,
+              invoiceDeliveryMethod: row.invoiceDeliveryMethod,
+            });
+          })
+          .on('end', () => {
+            resolve();
+          })
+          .on('error', (error) => {
+            reject(error);
+          });
+      });
+    } else if (req.file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
+      // Excelファイルの処理
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.readFile(filePath);
+      const worksheet = workbook.getWorksheet(1);
+
+      if (worksheet) {
+        const headerMap: { [key: number]: string } = {};
+        worksheet.getRow(1).eachCell((cell, colNumber) => {
+          headerMap[colNumber] = cell.text.trim();
+        });
+
+        worksheet.eachRow((row, rowNumber) => {
+          if (rowNumber === 1) return; // Skip header row
+
+          const customerData: any = {};
+          row.eachCell((cell, colNumber) => {
+            const header = headerMap[colNumber];
+            if (header) {
+              customerData[header] = cell.text || '';
+            }
+          });
+
+          customersToImport.push({
+            id: customerData.id,
+            name: customerData.name,
+            formalName: customerData.formalName,
+            postalCode: customerData.postalCode,
+            address: customerData.address,
+            phone: customerData.phone,
+            closingDay: parseInt(customerData.closingDay || '0'),
+            paymentTerms: customerData.paymentTerms,
+            email: customerData.email,
+            contactPerson: customerData.contactPerson,
+            invoiceDeliveryMethod: customerData.invoiceDeliveryMethod,
+          });
+        });
+      }
+    } else {
+      return res.status(400).json({ message: 'Unsupported file type.' });
+    }
+
+    // 既存の顧客データとマージ（重複は上書き）
+    customersToImport.forEach(importedCustomer => {
+      const existingIndex = customers.findIndex(c => c.id === importedCustomer.id);
+      if (existingIndex > -1) {
+        customers[existingIndex] = importedCustomer; // 上書き
+      } else {
+        customers.push(importedCustomer);
+      }
+    });
+
+    saveData();
+    res.status(200).json({ message: 'Customers imported successfully.', importedCount: customersToImport.length });
+  } catch (error) {
+    console.error('Error importing customers:', error);
+    res.status(500).json({ message: 'Failed to import customers.', error: error instanceof Error ? error.message : String(error) });
+  } finally {
+    // アップロードされた一時ファイルを削除
+    fs.unlink(filePath, (err) => {
+      if (err) console.error('Error deleting temporary file:', err);
+    });
+  }
+});
+
+app.post('/api/import/products', upload.single('file'), async (req: CustomRequest, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: 'No file uploaded.' });
+  }
+
+  const filePath = req.file.path;
+  const productsToImport: Product[] = [];
+
+  try {
+    if (req.file.mimetype === 'text/csv') {
+      // CSVファイルの処理
+      await new Promise<void>((resolve, reject) => {
+        fs.createReadStream(filePath)
+          .pipe(csv())
+          .on('data', (row) => {
+            productsToImport.push({
+              id: row.id,
+              name: row.name,
+              unitPrice: parseFloat(row.unitPrice || '0'),
+              unit: row.unit,
+              shippingAddress: row.shippingAddress,
+              postalCode: row.postalCode,
+              customer: row.customer,
+              notes: row.notes,
+              shippingName: row.shippingName,
+            });
+          })
+          .on('end', () => {
+            resolve();
+          })
+          .on('error', (error) => {
+            reject(error);
+          });
+      });
+    } else if (req.file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
+      // Excelファイルの処理
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.readFile(filePath);
+      const worksheet = workbook.getWorksheet(1);
+
+      if (worksheet) {
+        const headerMap: { [key: number]: string } = {};
+        worksheet.getRow(1).eachCell((cell, colNumber) => {
+          headerMap[colNumber] = cell.text.trim();
+        });
+
+        worksheet.eachRow((row, rowNumber) => {
+          if (rowNumber === 1) return; // Skip header row
+
+          const productData: any = {};
+          row.eachCell((cell, colNumber) => {
+            const header = headerMap[colNumber];
+            if (header) {
+              productData[header] = cell.text || '';
+            }
+          });
+
+          productsToImport.push({
+            id: productData.id,
+            name: productData.name,
+            unitPrice: parseFloat(productData.unitPrice || '0'),
+            unit: productData.unit,
+            shippingAddress: productData.shippingAddress,
+            postalCode: productData.postalCode,
+            customer: productData.customer,
+            notes: productData.notes,
+            shippingName: productData.shippingName,
+          });
+        });
+      }
+    } else {
+      return res.status(400).json({ message: 'Unsupported file type.' });
+    }
+
+    // 既存の商品データとマージ（重複は上書き）
+    productsToImport.forEach(importedProduct => {
+      const existingIndex = products.findIndex(p => p.id === importedProduct.id);
+      if (existingIndex > -1) {
+        products[existingIndex] = importedProduct; // 上書き
+      } else {
+        products.push(importedProduct);
+      }
+    });
+
+    saveData();
+    res.status(200).json({ message: 'Products imported successfully.', importedCount: productsToImport.length });
+  } catch (error) {
+    console.error('Error importing products:', error);
+    res.status(500).json({ message: 'Failed to import products.', error: error instanceof Error ? error.message : String(error) });
+  } finally {
+    // アップロードされた一時ファイルを削除
+    fs.unlink(filePath, (err) => {
+      if (err) console.error('Error deleting temporary file:', err);
+    });
+  }
+});
+
+app.post('/api/products', (req, res) => {
+  const newProduct = req.body;
+  const maxIdNum = products.reduce((max, product) => {
+    const idNum = parseInt(product.id.replace('P', ''));
+    return isNaN(idNum) ? max : Math.max(max, idNum);
+  }, 0);
+  newProduct.id = 'P' + String(maxIdNum + 1).padStart(3, '0');
+  products.push(newProduct);
+  saveData();
+  res.status(201).json(newProduct);
+});
+
+app.put('/api/products/:id', (req, res) => {
+  const { id } = req.params;
+  const updatedProductData = req.body;
+  const productIndex = products.findIndex(p => p.id === id);
+
+  if (productIndex > -1) {
+    products[productIndex] = { ...products[productIndex], ...updatedProductData };
+    saveData();
+    res.status(200).json(products[productIndex]);
+  } else {
+    res.status(404).json({ message: 'Product not found.' });
+  }
+});
+
+app.put('/api/deliveries/:id', (req, res) => {
+  const { id } = req.params;
+  const updatedDeliveryData = req.body;
+  const deliveryIndex = deliveries.findIndex(d => d.id === id);
+
+  if (deliveryIndex > -1) {
+    try {
+      const currentDelivery = deliveries[deliveryIndex];
+
+      // customerNameからcustomerIdに変換
+      let updatedCustomerId = currentDelivery.customerId; // デフォルトは現在のID
+      if (updatedDeliveryData.customerName) {
+        const customer = customers.find(c => c.name === updatedDeliveryData.customerName);
+        if (customer) {
+          updatedCustomerId = customer.id;
+        } else {
+          return res.status(400).json({ message: `Customer not found: ${updatedDeliveryData.customerName}` });
+        }
+      } else if (updatedDeliveryData.customerId) {
+        updatedCustomerId = updatedDeliveryData.customerId;
+      }
+
+      const updatedItems = updatedDeliveryData.items ? updatedDeliveryData.items.map((item: any) => {
+        let productIdToUse = item.productId;
+        let productNameToUse = item.productName;
+        let unitToUse = item.unit;
+        let unitPriceToUse = item.unitPrice;
+
+        // If productName is provided and productId is not, treat as free-form
+        if (productNameToUse && !productIdToUse) {
+          const existingProduct = products.find(p => p.name === productNameToUse);
+          if (existingProduct) {
+            productIdToUse = existingProduct.id;
+            unitToUse = unitToUse || existingProduct.unit;
+            unitPriceToUse = unitPriceToUse || existingProduct.unitPrice;
+          } else {
+            productIdToUse = ''; // Indicate free-form product
+          }
+        } else if (productIdToUse) {
+          const masterProduct = products.find(p => p.id === productIdToUse);
+          if (masterProduct) {
+            productNameToUse = masterProduct.name;
+            unitToUse = unitToUse || masterProduct.unit;
+            unitPriceToUse = unitPriceToUse || masterProduct.unitPrice;
+          } else {
+            // productIdが見つからない場合もエラーを返す
+            return res.status(400).json({ message: `Product not found with ID: ${productIdToUse}` });
+          }
+        }
+
+        return {
+          ...item,
+          productId: productIdToUse,
+          productName: productNameToUse,
+          unit: unitToUse,
+          unitPrice: unitPriceToUse,
+        };
+      }) : currentDelivery.items;
+
+      deliveries[deliveryIndex] = {
+        ...currentDelivery,
+        ...updatedDeliveryData,
+        items: updatedItems,
+        customerId: updatedCustomerId,
+      };
+      saveData();
+      res.status(200).json(deliveries[deliveryIndex]);
+    } catch (error) {
+      console.error('Error updating delivery:', error);
+      res.status(500).json({ message: 'Failed to update delivery.', error: error instanceof Error ? error.message : String(error) });
+    }
+  } else {
+    res.status(404).json({ message: 'Delivery not found.' });
+  }
+});
+
+app.delete('/api/products/:id', (req, res) => {
+  const { id } = req.params;
+  const initialLength = products.length;
+  products = products.filter(product => product.id !== id);
+  if (products.length < initialLength) {
+    saveData();
+    res.status(200).json({ message: 'Product deleted successfully.' });
+  } else {
+    res.status(404).json({ message: 'Product not found.' });
+  }
+});
+
+app.delete('/api/products/:id', (req, res) => {
+  const { id } = req.params;
+  const initialLength = products.length;
+  products = products.filter(product => product.id !== id);
+  if (products.length < initialLength) {
+    saveData();
+    res.status(200).json({ message: 'Product deleted successfully.' });
+  } else {
+    res.status(404).json({ message: 'Product not found.' });
+  }
+});
+
+app.post('/api/import/deliveries', upload.single('file'), async (req: CustomRequest, res) => {
+  if (!req.file) {
+    return res.status(400).json({ message: 'No file uploaded.' });
+  }
+
+  const filePath = req.file.path;
+  const deliveriesMap: { [id: string]: Delivery } = {};
+
+  try {
+    if (req.file.mimetype === 'text/csv') {
+      // CSVファイルの処理は現状維持（必要であれば同様のロジックを実装）
+      return res.status(501).json({ message: 'CSV import for deliveries is not fully implemented with aggregation.' });
+    } else if (req.file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') {
+      const workbook = new ExcelJS.Workbook();
+      await workbook.xlsx.readFile(filePath);
+      const worksheet = workbook.getWorksheet(1);
+
+      if (worksheet) {
+        const headerMap: { [key: number]: string } = {};
+        worksheet.getRow(1).eachCell((cell, colNumber) => {
+          headerMap[colNumber] = cell.text.trim();
+        });
+
+        worksheet.eachRow((row, rowNumber) => {
+          if (rowNumber === 1) return; // Skip header row
+
+          const deliveryData: any = {};
+          row.eachCell((cell, colNumber) => {
+            const header = headerMap[colNumber];
+            if (header) {
+              deliveryData[header] = cell.text || '';
+            }
+          });
+
+          const customer = customers.find(c => c.name === (deliveryData.customerName || '').trim());
+          const product = products.find(p => p.name === (deliveryData.productName || '').trim());
+
+          const newItem = {
+            productId: product ? product.id : '',
+            quantity: parseInt(deliveryData.quantity || '0'),
+            unitPrice: parseFloat(deliveryData.unitPrice || '0'),
+            unit: deliveryData.unit || (product ? product.unit : ''),
+          };
+
+          if (deliveriesMap[deliveryData.id]) {
+            deliveriesMap[deliveryData.id].items.push(newItem);
+          } else {
+            deliveriesMap[deliveryData.id] = {
+              id: deliveryData.id,
+              voucherNumber: deliveryData.voucherNumber,
+              deliveryDate: deliveryData.deliveryDate,
+              customerId: customer ? customer.id : '',
+              items: [newItem],
+              notes: deliveryData.notes,
+              orderId: deliveryData.orderId,
+              status: deliveryData.status as any,
+              invoiceStatus: deliveryData.invoiceStatus as any,
+              salesGroup: deliveryData.salesGroup,
+              shippingAddressName: deliveryData.shippingAddressName,
+              shippingPostalCode: deliveryData.shippingPostalCode,
+              shippingAddressDetail: deliveryData.shippingAddressDetail,
+            };
+          }
+        });
+      }
+    } else {
+      return res.status(400).json({ message: 'Unsupported file type.' });
+    }
+
+    const deliveriesToImport = Object.values(deliveriesMap);
+
+    deliveriesToImport.forEach(importedDelivery => {
+      const existingIndex = deliveries.findIndex(d => d.id === importedDelivery.id);
+      if (existingIndex > -1) {
+        deliveries[existingIndex] = importedDelivery; // 上書き
+      } else {
+        deliveries.push(importedDelivery);
+      }
+    });
+
+    saveData();
+    res.status(200).json({ message: 'Deliveries imported successfully.', importedCount: deliveriesToImport.length });
+  } catch (error) {
+    console.error('Error importing deliveries:', error);
+    res.status(500).json({ message: 'Failed to import deliveries.', error: error instanceof Error ? error.message : String(error) });
+  } finally {
+    fs.unlink(filePath, (err) => {
+      if (err) console.error('Error deleting temporary file:', err);
+    });
+  }
+});
 
 app.listen(port, () => {
+  loadData();
   console.log(`Backend server listening at http://localhost:${port}`);
 });

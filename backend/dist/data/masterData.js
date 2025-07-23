@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.invoices = exports.users = exports.mockDeliveries = exports.customers = exports.products = void 0;
+exports.users = exports.mockDeliveries = exports.customers = exports.products = void 0;
 // 仮の商品データ
 exports.products = [
     { id: 'P001', name: '商品A', unitPrice: 1000, unit: '個', shippingAddress: '東京都', postalCode: '100-0001', customer: 'C001', notes: '' },
@@ -17,17 +17,15 @@ exports.customers = [
 ];
 // 仮の納品データ
 exports.mockDeliveries = [
-    { id: 1, deliveryDate: '2024-07-01', customerId: 'C001', productId: 'P001', quantity: 10, unitPrice: 1000, unit: '個', notes: '', orderId: 'L001', status: '発行済み', salesGroup: 'SG-2024-001', invoiceStatus: '未請求', shippingAddressName: '株式会社X', shippingPostalCode: '100-0001', shippingAddressDetail: '東京都千代田区1-1-1' },
-    { id: 2, deliveryDate: '2024-07-05', customerId: 'C002', productId: 'P002', quantity: 5, unitPrice: 2500, unit: 'セット', notes: '急ぎ', orderId: 'L002', status: '未発行', salesGroup: 'SG-2024-002', invoiceStatus: '未請求', shippingAddressName: '有限会社Y', shippingPostalCode: '530-0001', shippingAddressDetail: '大阪府大阪市北区2-2-2' },
-    { id: 3, deliveryDate: '2024-07-10', customerId: 'C001', productId: 'P003', quantity: 20, unitPrice: 500, unit: '本', notes: '', orderId: 'L003', status: '発行済み', salesGroup: 'SG-2024-001', invoiceStatus: '未請求', shippingAddressName: '株式会社X', shippingPostalCode: '100-0001', shippingAddressDetail: '東京都千代田区1-1-1' },
-    { id: 4, deliveryDate: '2024-07-12', customerId: 'C003', productId: 'P001', quantity: 8, unitPrice: 1000, unit: '個', notes: '', orderId: 'L004', status: '未発行', salesGroup: 'SG-2024-003', invoiceStatus: '未請求', shippingAddressName: '合同会社Z', shippingPostalCode: '810-0001', shippingAddressDetail: '福岡県福岡市中央区3-3-3' },
-    { id: 5, deliveryDate: '2024-07-15', customerId: 'C002', productId: 'P003', quantity: 15, unitPrice: 500, unit: '本', notes: '', orderId: 'L005', status: '未発行', salesGroup: 'SG-2024-002', invoiceStatus: '未請求', shippingAddressName: '有限会社Y', shippingPostalCode: '530-0001', shippingAddressDetail: '大阪府大阪市北区2-2-2' },
-    { id: 6, deliveryDate: '2024-07-17', customerId: 'C004', productId: 'P004', quantity: 1, unitPrice: 12345, unit: '個', notes: '長い名前のテスト', orderId: 'L006', status: '未発行', salesGroup: 'SG-2024-004', invoiceStatus: '未請求', shippingAddressName: '赤サタな濱家らわわジェイ着', shippingPostalCode: '100-0001', shippingAddressDetail: '東京都千代田区4-4-4' },
+    { id: '1', voucherNumber: 'V00001', deliveryDate: '2024-07-01', customerId: 'C001', items: [{ productId: 'P001', quantity: 10, unitPrice: 1000, unit: '個' }], notes: '', orderId: 'L001', status: '発行済み', salesGroup: 'SG-2024-001', invoiceStatus: '未請求', shippingAddressName: '株式会社X', shippingPostalCode: '100-0001', shippingAddressDetail: '東京都千代田区1-1-1' },
+    { id: '2', voucherNumber: 'V00002', deliveryDate: '2024-07-05', customerId: 'C002', items: [{ productId: 'P002', quantity: 5, unitPrice: 2500, unit: 'セット' }], notes: '急ぎ', orderId: 'L002', status: '未発行', salesGroup: 'SG-2024-002', invoiceStatus: '未請求', shippingAddressName: '有限会社Y', shippingPostalCode: '530-0001', shippingAddressDetail: '大阪府大阪市北区2-2-2' },
+    { id: '3', voucherNumber: 'V00003', deliveryDate: '2024-07-10', customerId: 'C001', items: [{ productId: 'P003', quantity: 20, unitPrice: 500, unit: '本' }], notes: '', orderId: 'L003', status: '発行済み', salesGroup: 'SG-2024-001', invoiceStatus: '未請求', shippingAddressName: '株式会社X', shippingPostalCode: '100-0001', shippingAddressDetail: '東京都千代田区1-1-1' },
+    { id: '4', voucherNumber: 'V00004', deliveryDate: '2024-07-12', customerId: 'C003', items: [{ productId: 'P001', quantity: 8, unitPrice: 1000, unit: '個' }], notes: '', orderId: 'L004', status: '未発行', salesGroup: 'SG-2024-003', invoiceStatus: '未請求', shippingAddressName: '合同会社Z', shippingPostalCode: '810-0001', shippingAddressDetail: '福岡県福岡市中央区3-3-3' },
+    { id: '5', voucherNumber: 'V00005', deliveryDate: '2024-07-15', customerId: 'C002', items: [{ productId: 'P003', quantity: 15, unitPrice: 500, unit: '本' }], notes: '', orderId: 'L005', status: '未発行', salesGroup: 'SG-2024-002', invoiceStatus: '未請求', shippingAddressName: '有限会社Y', shippingPostalCode: '530-0001', shippingAddressDetail: '大阪府大阪市北区2-2-2' },
+    { id: '6', voucherNumber: 'V00006', deliveryDate: '2024-07-17', customerId: 'C004', items: [{ productId: 'P004', quantity: 1, unitPrice: 12345, unit: '個' }], notes: '長い名前のテスト', orderId: 'L006', status: '未発行', salesGroup: 'SG-2024-004', invoiceStatus: '未請求', shippingAddressName: '赤サタな濱家らわわジェイ着', shippingPostalCode: '100-0001', shippingAddressDetail: '東京都千代田区4-4-4' },
 ];
 // 仮のユーザーデータ
 exports.users = [
     { id: 'U001', username: 'admin', email: 'admin@example.com', role: '管理者' },
     { id: 'U002', username: 'user1', email: 'user1@example.com', role: '一般' },
 ];
-// 仮の請求書データ
-exports.invoices = [];

@@ -1,0 +1,627 @@
+[
+  {
+    "id": "C001",
+    "closingDay": 0
+  },
+  {
+    "id": "C002",
+    "name": "イチワ",
+    "formalName": "(株)イチワ  ",
+    "postalCode": "491-0201",
+    "address": "愛知県一宮市奥町字神田19-1",
+    "phone": "0586-64-2191",
+    "closingDay": 99
+  },
+  {
+    "id": "C003",
+    "name": "SNK",
+    "closingDay": 0
+  },
+  {
+    "id": "C004",
+    "name": "ファクト",
+    "closingDay": 0
+  },
+  {
+    "id": "C005",
+    "name": "ネオシステム",
+    "closingDay": 0
+  },
+  {
+    "id": "C006",
+    "name": "クラボウ",
+    "closingDay": 0
+  },
+  {
+    "id": "C007",
+    "name": "ジャパン・ゴアテックス",
+    "closingDay": 0
+  },
+  {
+    "id": "C008",
+    "name": "ヘニックス",
+    "closingDay": 0
+  },
+  {
+    "id": "C009",
+    "name": "日本コンラックス",
+    "closingDay": 0
+  },
+  {
+    "id": "C010",
+    "name": "ミヨシ",
+    "closingDay": 0
+  },
+  {
+    "id": "C011",
+    "name": "ラステック",
+    "closingDay": 0
+  },
+  {
+    "id": "C012",
+    "name": "栃木",
+    "closingDay": 0
+  },
+  {
+    "id": "C013",
+    "name": "ユニテック",
+    "formalName": "ユニテック電子株式会社  ",
+    "postalCode": "553-0003",
+    "address": "大阪市福島区福島5丁目17-21",
+    "phone": "06-6147-3210",
+    "closingDay": 20
+  },
+  {
+    "id": "C014",
+    "name": "ユタカ",
+    "closingDay": 0
+  },
+  {
+    "id": "C015",
+    "name": "小林",
+    "closingDay": 0
+  },
+  {
+    "id": "C016",
+    "name": "日本フューテック",
+    "closingDay": 0
+  },
+  {
+    "id": "C017",
+    "name": "ハイライツ",
+    "closingDay": 0
+  },
+  {
+    "id": "C018",
+    "name": "富士電子",
+    "closingDay": 0
+  },
+  {
+    "id": "C019",
+    "name": "マキ",
+    "closingDay": 0
+  },
+  {
+    "id": "C020",
+    "name": "ライズ",
+    "closingDay": 0
+  },
+  {
+    "id": "C021",
+    "name": "京光",
+    "closingDay": 0
+  },
+  {
+    "id": "C022",
+    "name": "京セラ",
+    "closingDay": 0
+  },
+  {
+    "id": "C023",
+    "name": "京写",
+    "closingDay": 0
+  },
+  {
+    "id": "C024",
+    "name": "キョウデン",
+    "closingDay": 0
+  },
+  {
+    "id": "C025",
+    "name": "キタ",
+    "closingDay": 0
+  },
+  {
+    "id": "C026",
+    "name": "アート",
+    "formalName": "株式会社アート電子  ",
+    "postalCode": "593-8327",
+    "address": "大阪府堺市西区鳳中町10-16-15",
+    "phone": "072-262-3121",
+    "closingDay": 99
+  },
+  {
+    "id": "C027",
+    "name": "アロー",
+    "closingDay": 0
+  },
+  {
+    "id": "C028",
+    "name": "LIVEACT",
+    "formalName": "株式会社ＬＩＶＥＡＣＴ  ",
+    "postalCode": "572-0838",
+    "address": "大阪府寝屋川市八坂町12-13　旭八坂ビル3F",
+    "phone": "072-800-6377",
+    "closingDay": 10
+  },
+  {
+    "id": "C029",
+    "name": "伊勢村田",
+    "formalName": "エブレン株式会社  ",
+    "postalCode": "533-0004",
+    "address": "大阪市東淀川区小松3-20-27",
+    "phone": "06-6990-6611",
+    "closingDay": 99
+  },
+  {
+    "id": "C030",
+    "name": "エプレン",
+    "formalName": "鐘通株式会社  ",
+    "postalCode": "601-8448",
+    "address": "京都市南区西九条豊田町1番地",
+    "phone": "075-662-1111",
+    "closingDay": 20
+  },
+  {
+    "id": "C031",
+    "name": "鐘通",
+    "closingDay": 0
+  },
+  {
+    "id": "C032",
+    "name": "北島",
+    "formalName": "北島設計  ",
+    "postalCode": "639-1042",
+    "address": "奈良県大和郡山市小泉町2243-28",
+    "phone": "0743-52-1598",
+    "closingDay": 25
+  },
+  {
+    "id": "C033",
+    "name": "関西電子",
+    "formalName": "関西電子工業(株)  ",
+    "postalCode": "661-0026",
+    "address": "尼崎市水堂町4丁目2番22号",
+    "phone": "06-6437-0949",
+    "closingDay": 99
+  },
+  {
+    "id": "C034",
+    "name": "村田製作所",
+    "closingDay": 0
+  },
+  {
+    "id": "C035",
+    "name": "アイエイエム",
+    "formalName": "アイエイエム電子(株)  ",
+    "postalCode": "399-4117",
+    "address": "長野県駒ヶ根市赤穂9847番地",
+    "phone": "0265-82-5191",
+    "closingDay": 99
+  },
+  {
+    "id": "C036",
+    "name": "イズミ",
+    "formalName": "株式会社　イズミエレクトロニクス  ",
+    "postalCode": "590-0063",
+    "address": "大阪府堺市堺区中安井町3-4-10 　　　　　　　　　　　　　　　堺東八千代ﾋﾞﾙ9F",
+    "phone": "072-224-6070",
+    "closingDay": 20
+  },
+  {
+    "id": "C037",
+    "name": "伊原",
+    "formalName": "伊原電子工業株式会社  ",
+    "postalCode": "485-0822",
+    "address": "愛知県小牧市上末雁戸嶋1816",
+    "phone": "0568-76-7878",
+    "closingDay": 20
+  },
+  {
+    "id": "C038",
+    "name": "エーシック",
+    "formalName": "エーシック株式会社  ",
+    "postalCode": "611-0031",
+    "address": "京都府宇治市広野町西裏37-1",
+    "phone": "0774-41-3777",
+    "closingDay": 99
+  },
+  {
+    "id": "C039",
+    "name": "エフ・ケイ",
+    "closingDay": 0
+  },
+  {
+    "id": "C040",
+    "name": "エムジー",
+    "formalName": "株式会社エムジー  ",
+    "postalCode": "619-0216",
+    "address": "京都府木津川市州見台8丁目2番地4",
+    "phone": "0774-75-1815",
+    "closingDay": 25
+  },
+  {
+    "id": "C041",
+    "name": "大阪サーキット",
+    "formalName": "大阪サーキット株式会社  ",
+    "postalCode": "564-0062",
+    "address": "大阪府吹田市垂水町3-4-4",
+    "phone": "06-6338-4811",
+    "closingDay": 99
+  },
+  {
+    "id": "C042",
+    "name": "カワサカ",
+    "formalName": "株式会社　カワサカプロセス  ",
+    "postalCode": "570-0043",
+    "address": "大阪府守口市南寺方東通4-13-6",
+    "phone": "06-6991-5859",
+    "closingDay": 99
+  },
+  {
+    "id": "C043",
+    "name": "京都電機器",
+    "formalName": "京都電機器株式会社  ",
+    "postalCode": "611-0041",
+    "address": "京都府宇治市槇島町十六19-1",
+    "phone": "0774-25-7701",
+    "closingDay": 99
+  },
+  {
+    "id": "C044",
+    "name": "旭光",
+    "formalName": "旭光電機株式会社 総務部 経理Ｇ ",
+    "postalCode": "650-0022",
+    "address": "神戸市中央区元町通5丁目7-20",
+    "phone": "078-341-1837",
+    "closingDay": 99
+  },
+  {
+    "id": "C045",
+    "name": "クズミ",
+    "formalName": "クズミ電子工業(株)  総務部　資材　大槻",
+    "postalCode": "251-0016",
+    "address": "神奈川県藤沢市弥勒寺109-1",
+    "phone": "0466-25-6866",
+    "closingDay": 99
+  },
+  {
+    "id": "C046",
+    "name": "クリオ",
+    "formalName": "株式会社　クリオ  ",
+    "postalCode": "491-0201",
+    "address": "愛知県一宮市奥町字神田19-1",
+    "phone": "0586-64-3177",
+    "closingDay": 99
+  },
+  {
+    "id": "C047",
+    "name": "グローバル",
+    "formalName": "(株)グローバルアソシエイツ  ",
+    "postalCode": "820-0048",
+    "address": "福岡県飯塚市蓮台寺3",
+    "phone": "0948-43-3740",
+    "closingDay": 99
+  },
+  {
+    "id": "C048",
+    "name": "ケイツー",
+    "formalName": "株式会社　ケイツープリント  ",
+    "postalCode": "570-0043",
+    "address": "大阪府守口市南寺方東通4-13-22",
+    "phone": "06-6998-3867",
+    "closingDay": 99
+  },
+  {
+    "id": "C049",
+    "name": "サン電子",
+    "formalName": "サン電子工業(株)  ",
+    "postalCode": "751-0886",
+    "address": "山口県下関市大字石原字上岡168",
+    "phone": "083-256-2121",
+    "closingDay": 99
+  },
+  {
+    "id": "C050",
+    "name": "サスサンワ",
+    "formalName": "サス・サンワ(株) エレクトロニクスセクション ",
+    "postalCode": "550-0011",
+    "address": "大阪市西区阿波座一丁目4番4号　野村不動産四ツ橋ﾋﾞﾙ12階",
+    "phone": "06-6533-1152",
+    "closingDay": 99
+  },
+  {
+    "id": "C051",
+    "name": "サンエー電機",
+    "formalName": "サンエー電機株式会社  ",
+    "postalCode": "601-8205",
+    "address": "京都市南区久世殿城町295",
+    "phone": "075-933-2411",
+    "closingDay": 15
+  },
+  {
+    "id": "C052",
+    "name": "三和",
+    "formalName": "三和電子サーキット(株)  ",
+    "postalCode": "546-0041",
+    "address": "大阪市東住吉区桑津1-7-13",
+    "phone": "06-6713-0741",
+    "closingDay": 20
+  },
+  {
+    "id": "C053",
+    "name": "セイテック",
+    "formalName": "セイテック株式会社  管理部",
+    "postalCode": "709-0732",
+    "address": "岡山県赤磐市可真下580番地",
+    "phone": "086-995-2600",
+    "closingDay": 99
+  },
+  {
+    "id": "C054",
+    "name": "神港",
+    "formalName": "神港テクノス(株)  ",
+    "postalCode": "562-0035",
+    "address": "大阪府箕面市船場東2丁目5番1号",
+    "phone": "072-727-2999",
+    "closingDay": 99
+  },
+  {
+    "id": "C055",
+    "name": "ダイコク",
+    "formalName": "ダイコク電機（株） 生産統括部　購買部　購買係 細川 昌宏",
+    "postalCode": "480-0304",
+    "address": "愛知県春日井市神屋町字引沢1番27号 4号棟",
+    "phone": "052-581-7111",
+    "closingDay": 99
+  },
+  {
+    "id": "C056",
+    "name": "大日電子",
+    "formalName": "大日電子株式会社  資材部",
+    "postalCode": "660-0806",
+    "address": "尼崎市金楽寺町1-2-65",
+    "phone": "06-6489-2431",
+    "closingDay": 99
+  },
+  {
+    "id": "C057",
+    "name": "立花",
+    "formalName": "(株)立花エレテック EMS部　EMS推進課 ",
+    "postalCode": "550-8555",
+    "address": "大阪市西区西本町1-13-25",
+    "phone": "06-6539-5060",
+    "closingDay": 99
+  },
+  {
+    "id": "C058",
+    "name": "田中電工",
+    "formalName": "田中電工株式会社  ",
+    "postalCode": "35-0031　",
+    "address": "大阪市旭区高殿7丁目16番31号",
+    "phone": "06-6951-1131",
+    "closingDay": 99
+  },
+  {
+    "id": "C059",
+    "name": "棚澤",
+    "formalName": "(株)棚澤八光社  ",
+    "postalCode": "679-5651",
+    "address": "兵庫県佐用郡佐用町櫛田1854-6",
+    "phone": "0790-88-0861",
+    "closingDay": 99
+  },
+  {
+    "id": "C060",
+    "name": "ティーユー",
+    "formalName": "(株)ティーユーエレクトロニクス  ",
+    "postalCode": "759-0134",
+    "address": "山口県宇部市大字善和字牛明203-143",
+    "phone": "0836-62-1174",
+    "closingDay": 99
+  },
+  {
+    "id": "C061",
+    "name": "テクノ",
+    "formalName": "テクノサーキット(株)  ",
+    "postalCode": "601-8024",
+    "address": "京都市南区東九条東札辻町13番1",
+    "phone": "075-681-7103",
+    "closingDay": 99
+  },
+  {
+    "id": "C062",
+    "name": "東海",
+    "formalName": "(株)東海商事  伊藤課長",
+    "postalCode": "464-0851",
+    "address": "名古屋市千種区今池南5-8　オフィス小川3F",
+    "phone": "052-715-7256",
+    "closingDay": 15
+  },
+  {
+    "id": "C063",
+    "name": "東海八王子",
+    "formalName": "(株)東海商事　八王子支店  ",
+    "postalCode": "191-0061",
+    "address": "東京都日野市大坂上2-5-6",
+    "phone": "042-843-3871",
+    "closingDay": 15
+  },
+  {
+    "id": "C064",
+    "name": "トスレック",
+    "formalName": "トスレック株式会社  ",
+    "postalCode": "601-8303",
+    "address": "京都市南区吉祥院西ノ庄西中町46-2",
+    "phone": "075-314-2418",
+    "closingDay": 20
+  },
+  {
+    "id": "C065",
+    "name": "ニッタ",
+    "formalName": "ニッタ株式会社 工業資材事業部 ｺﾞﾑ化成品事業G・RFID技術 ",
+    "postalCode": "639-1085",
+    "address": "奈良県大和郡山市池沢町172",
+    "phone": "0743-56-2024",
+    "closingDay": 99
+  },
+  {
+    "id": "C066",
+    "name": "日本テクニカ",
+    "formalName": "有限会社　日本テクニカ  ",
+    "postalCode": "617-0836",
+    "address": "京都府長岡京市勝竜寺14-21",
+    "phone": "075-959-3993",
+    "closingDay": 20
+  },
+  {
+    "id": "C067",
+    "name": "日本電計",
+    "formalName": "日本電計株式会社  ",
+    "postalCode": "321-0904",
+    "address": "栃木県宇都宮市陽東7-7-39",
+    "phone": "028-689-5871",
+    "closingDay": 99
+  },
+  {
+    "id": "C068",
+    "name": "ニッチ",
+    "formalName": "(有)ニッチパーシャル  ",
+    "postalCode": "590-0143",
+    "address": "堺市南区新檜尾台3-3-19-301",
+    "phone": "072-298-2560",
+    "closingDay": 99
+  },
+  {
+    "id": "C069",
+    "name": "ハイブリスト",
+    "closingDay": 0
+  },
+  {
+    "id": "C070",
+    "name": "八光",
+    "formalName": "八光電子工業(株) 総務課 ",
+    "postalCode": "578-0921",
+    "address": "東大阪市水走2丁目2-17",
+    "phone": "0729-62-6405",
+    "closingDay": 20
+  },
+  {
+    "id": "C071",
+    "name": "マクセル",
+    "formalName": "マクセル(株)  ",
+    "postalCode": "822-1296",
+    "address": "福岡県田川郡福智町伊方4680番地",
+    "phone": "075-956-3660",
+    "closingDay": 99
+  },
+  {
+    "id": "C072",
+    "name": "松尾電機",
+    "formalName": "松尾電機株式会社  福知山工場",
+    "postalCode": "620-0853",
+    "address": "京都府福知山市長田野町1-20-2",
+    "phone": "0773-27-5611",
+    "closingDay": 0
+  },
+  {
+    "id": "C073",
+    "name": "松尾製作所",
+    "formalName": "株式会社松尾製作所  ",
+    "postalCode": "612-8392",
+    "address": "京都府京都市伏見区下鳥羽北ノ口町77",
+    "phone": "075-602-9997",
+    "closingDay": 99
+  },
+  {
+    "id": "C074",
+    "name": "まほら",
+    "formalName": "(株)まほら舎　電子事業部  ",
+    "postalCode": "630-8253",
+    "address": "奈良県奈良市内侍原町12-2",
+    "phone": "0742-22-0951",
+    "closingDay": 99
+  },
+  {
+    "id": "C075",
+    "name": "三雅",
+    "formalName": "三雅産業株式会社  ",
+    "postalCode": "569-0853",
+    "address": "高槻市柳川町1丁目2番2号",
+    "phone": "072-694-4141",
+    "closingDay": 20
+  },
+  {
+    "id": "C076",
+    "name": "八幡電機",
+    "formalName": "(株)八幡電機製作所  ",
+    "postalCode": "675-1204",
+    "address": "兵庫県加古川市八幡町上西条1149",
+    "phone": "079-438-0343",
+    "closingDay": 15
+  },
+  {
+    "id": "C077",
+    "name": "ユーアイニクス",
+    "formalName": "ユーアイニクス（株）  ",
+    "postalCode": "593-8311",
+    "address": "大阪府堺市西区上123-1",
+    "phone": "072-274-6010",
+    "closingDay": 20
+  },
+  {
+    "id": "C078",
+    "name": "ユニオン",
+    "formalName": "ユニオン電商株式会社  ",
+    "postalCode": "452-0811",
+    "address": "愛知県名古屋市西区砂原町106",
+    "phone": "052-503-9051",
+    "closingDay": 20
+  },
+  {
+    "id": "C079",
+    "name": "ユニテックジャパン",
+    "formalName": "ユニテックジャパン株式会社  ",
+    "postalCode": "663-8113",
+    "address": "兵庫県西宮市甲子園口2-21-3",
+    "phone": "0798-64-1902",
+    "closingDay": 20
+  },
+  {
+    "id": "C080",
+    "name": "レイマック",
+    "formalName": "株式会社レイマック  ",
+    "postalCode": "524-0215",
+    "address": "滋賀県守山市幸津川町1551",
+    "phone": "077-585-6767",
+    "closingDay": 99
+  },
+  {
+    "id": "C081",
+    "name": "和田",
+    "formalName": "和田電器(株)  ",
+    "postalCode": "571-0034",
+    "address": "門真市東田町16-18",
+    "phone": "06-6900-8008",
+    "closingDay": 99
+  },
+  {
+    "id": "C082",
+    "name": "アイエムシー",
+    "formalName": "(株)アイエムシー  ",
+    "postalCode": "559-0007",
+    "address": "大阪市住之江区粉浜西2-6-4 OMTビル2F",
+    "phone": "06-4703-3481",
+    "closingDay": 99
+  }
+]
