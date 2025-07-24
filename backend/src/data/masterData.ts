@@ -24,17 +24,21 @@ export interface Customer {
   invoiceDeliveryMethod: string; // 請求書送付方法 (例: 郵送, メール, Web)
 }
 
+export interface DeliveryItem {
+  productId?: string; // Optional, for free-form input
+  productName?: string; // Added for free-form input
+  quantity: number;
+  unitPrice: number;
+  unit: string;
+  notes?: string;
+}
+
 export interface Delivery {
   id: string;
   voucherNumber: string;
   deliveryDate: string;
   customerId: string;
-  items: { 
-    productId: string;
-    quantity: number;
-    unitPrice: number;
-    unit?: string;
-  }[];
+  items: DeliveryItem[];
   notes?: string;
   orderId?: string;
   status?: '発行済み' | '未発行';

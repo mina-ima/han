@@ -9,13 +9,15 @@
         "productId": "P3990",
         "quantity": 200,
         "unitPrice": 992,
-        "unit": "枚"
+        "unit": "枚",
+        "productName": "T6539-16"
       }
     ],
     "notes": "231111-HMMy-005",
     "shippingAddressName": "株式会社　ケイツープリント  ",
     "shippingPostalCode": "570-0043",
-    "shippingAddressDetail": "大阪府守口市南寺方東通4-13-22"
+    "shippingAddressDetail": "大阪府守口市南寺方東通4-13-22",
+    "status": "発行済み"
   },
   {
     "id": "2",
@@ -459,13 +461,15 @@
         "productId": "P2373",
         "quantity": 210,
         "unitPrice": 945,
-        "unit": "ｼｰﾄ"
+        "unit": "ｼｰﾄ",
+        "productName": "SR5 両面基板"
       }
     ],
     "notes": "2317 SR5-240819-SK14",
     "shippingAddressName": "(株)まほら舎　電子事業部  ",
     "shippingPostalCode": "630-8253",
-    "shippingAddressDetail": "奈良県奈良市内侍原町12-2"
+    "shippingAddressDetail": "奈良県奈良市内侍原町12-2",
+    "invoiceStatus": "請求済み"
   },
   {
     "id": "27",

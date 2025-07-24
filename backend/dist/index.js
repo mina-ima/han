@@ -233,6 +233,39 @@ const filterDeliveries = (query) => {
         filteredDeliveries = filteredDeliveries.filter(d => d.items.some(item => item.unitPrice <= parseFloat(maxUnitPrice)));
     }
     // Other filters like status, salesGroup, etc. would need to be adapted to the new data structure.
+    if (status) {
+        filteredDeliveries = filteredDeliveries.filter(d => d.status === status);
+    }
+    if (salesGroup) {
+        filteredDeliveries = filteredDeliveries.filter(d => d.salesGroup && d.salesGroup.includes(salesGroup));
+    }
+    if (unit) {
+        filteredDeliveries = filteredDeliveries.filter(d => d.items.some(item => item.unit === unit));
+    }
+    if (orderId) {
+        filteredDeliveries = filteredDeliveries.filter(d => d.orderId && d.orderId.includes(orderId));
+    }
+    if (notes) {
+        filteredDeliveries = filteredDeliveries.filter(d => d.notes && d.notes.includes(notes));
+    }
+    if (minAmount) {
+        filteredDeliveries = filteredDeliveries.filter(d => d.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0) >= parseFloat(minAmount));
+    }
+    if (maxAmount) {
+        filteredDeliveries = filteredDeliveries.filter(d => d.items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0) <= parseFloat(maxAmount));
+    }
+    if (invoiceStatus) {
+        filteredDeliveries = filteredDeliveries.filter(d => d.invoiceStatus === invoiceStatus);
+    }
+    if (shippingAddressName) {
+        filteredDeliveries = filteredDeliveries.filter(d => d.shippingAddressName && d.shippingAddressName.includes(shippingAddressName));
+    }
+    if (shippingPostalCode) {
+        filteredDeliveries = filteredDeliveries.filter(d => d.shippingPostalCode && d.shippingPostalCode.includes(shippingPostalCode));
+    }
+    if (shippingAddressDetail) {
+        filteredDeliveries = filteredDeliveries.filter(d => d.shippingAddressDetail && d.shippingAddressDetail.includes(shippingAddressDetail));
+    }
     return filteredDeliveries;
 };
 // Helper function to filter invoices
@@ -518,14 +551,12 @@ app.post('/api/deliveries', (req, res) => {
     }
     const processedItems = items.map((item) => {
         const product = products.find(p => p.name === item.productName);
-        if (!product) {
-            throw new Error(`Product not found: ${item.productName}`);
-        }
         return {
-            productId: product.id,
+            productId: product ? product.id : '',
+            productName: item.productName, // 自由入力された商品名を保持
             quantity: item.quantity,
             unitPrice: item.unitPrice,
-            unit: item.unit,
+            unit: item.unit || (product ? product.unit : ''), // 商品マスタから単位を取得、なければ自由入力
             notes: item.notes || '',
         };
     });
