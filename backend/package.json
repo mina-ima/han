@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc",
+    "build": "tsc && mkdir -p dist/src/fonts && cp src/fonts/NotoSansJP-Regular.ttf dist/src/fonts/NotoSansJP-Regular.ttf",
     "start": "node dist/index.js"
   },
   "keywords": [],
@@ -12,10 +12,13 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@types/pdfkit": "^0.17.2",
     "cors": "^2.8.5",
     "exceljs": "^4.4.0",
+    "google-fonts-helper": "^3.7.3",
     "json-2-csv": "^5.5.9",
-    "moment": "^2.30.1"
+    "moment": "^2.30.1",
+    "pdfkit": "^0.17.1"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19"

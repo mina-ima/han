@@ -20,6 +20,7 @@ const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const multer_1 = __importDefault(require("multer"));
 const csv_parser_1 = __importDefault(require("csv-parser"));
+const pdfkit_1 = __importDefault(require("pdfkit"));
 const app = (0, express_1.default)();
 const port = 3002;
 const dataDirectory = path_1.default.join(__dirname, 'data');
@@ -901,40 +902,138 @@ app.put('/api/deliveries/:id', (req, res) => {
         res.status(404).json({ message: 'Delivery not found.' });
     }
 });
-app.delete('/api/products/:id', (req, res) => {
+app.get('/api/deliveries/:id/pdf', (req, res) => {
     const { id } = req.params;
-    const initialLength = products.length;
-    products = products.filter(product => product.id !== id);
-    if (products.length < initialLength) {
-        saveData();
-        res.status(200).json({ message: 'Product deleted successfully.' });
+    const deliveryIndex = deliveries.findIndex(d => d.id === id);
+    if (deliveryIndex === -1) {
+        return res.status(404).send('Delivery not found');
     }
-    else {
-        res.status(404).json({ message: 'Product not found.' });
+    const delivery = deliveries[deliveryIndex];
+    const customer = customers.find(c => c.id === delivery.customerId);
+    if (!customer) {
+        return res.status(404).send('Customer not found');
+    }
+    try {
+        const doc = new pdfkit_1.default({ size: 'A4', margin: 50 });
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename=delivery_${id}.pdf`);
+        doc.pipe(res);
+        const fontPath = path_1.default.join(__dirname, '../src/fonts/NotoSansJP-Regular.ttf');
+        doc.font(fontPath);
+        // Header
+        doc.fontSize(20).text('納品書', { align: 'center' });
+        doc.moveDown();
+        // Info
+        doc.fontSize(12).text(`納品番号: ${delivery.voucherNumber}`);
+        doc.text(`発行日: ${new Date().toLocaleDateString()}`);
+        doc.text(`納品日: ${delivery.deliveryDate}`);
+        doc.moveDown();
+        // Customer Info
+        doc.text(`顧客名: ${customer.name}`);
+        doc.text(`住所: ${customer.address}`);
+        doc.text(`電話番号: ${customer.phone}`);
+        doc.moveDown();
+        // Items Table
+        const tableTop = doc.y;
+        const itemX = 50;
+        const quantityX = 250;
+        const unitPriceX = 350;
+        const amountX = 450;
+        doc.fontSize(10).text('商品名', itemX, tableTop);
+        doc.text('数量', quantityX, tableTop);
+        doc.text('単価', unitPriceX, tableTop);
+        doc.text('金額', amountX, tableTop);
+        let y = tableTop + 25;
+        let totalAmount = 0;
+        delivery.items.forEach(item => {
+            const product = products.find(p => p.id === item.productId);
+            const productName = product ? product.name : '不明な商品';
+            const amount = item.quantity * item.unitPrice;
+            totalAmount += amount;
+            doc.text(productName, itemX, y);
+            doc.text(item.quantity.toString(), quantityX, y);
+            doc.text(item.unitPrice.toString(), unitPriceX, y);
+            doc.text(amount.toString(), amountX, y);
+            y += 25;
+        });
+        // Total
+        doc.moveDown();
+        doc.fontSize(12).text(`合計金額: ${totalAmount.toLocaleString()} 円`, { align: 'right' });
+        doc.end();
+        // Update delivery status to '発行済み' after successful PDF generation
+        deliveries[deliveryIndex].status = '発行済み';
+        saveData();
+    }
+    catch (error) {
+        console.error('Error generating PDF:', error);
+        res.status(500).send('Error generating PDF');
     }
 });
-app.delete('/api/deliveries/:id', (req, res) => {
+app.get('/api/deliveries/:id/invoice-pdf', (req, res) => {
     const { id } = req.params;
-    const initialLength = deliveries.length;
-    deliveries = deliveries.filter(delivery => delivery.id !== id);
-    if (deliveries.length < initialLength) {
+    const deliveryIndex = deliveries.findIndex(d => d.id === id);
+    if (deliveryIndex === -1) {
+        return res.status(404).send('Delivery not found');
+    }
+    const delivery = deliveries[deliveryIndex];
+    const customer = customers.find(c => c.id === delivery.customerId);
+    if (!customer) {
+        return res.status(404).send('Customer not found');
+    }
+    try {
+        const doc = new pdfkit_1.default({ size: 'A4', margin: 50 });
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename=invoice_${id}.pdf`);
+        doc.pipe(res);
+        const fontPath = path_1.default.join(__dirname, '../src/fonts/NotoSansJP-Regular.ttf');
+        doc.font(fontPath);
+        // Header
+        doc.fontSize(20).text('請求書', { align: 'center' });
+        doc.moveDown();
+        // Info
+        doc.fontSize(12).text(`請求書番号: ${delivery.voucherNumber}`); // 納品番号を流用
+        doc.text(`発行日: ${new Date().toLocaleDateString()}`);
+        doc.text(`納品日: ${delivery.deliveryDate}`);
+        doc.moveDown();
+        // Customer Info
+        doc.text(`顧客名: ${customer.name}`);
+        doc.text(`住所: ${customer.address}`);
+        doc.text(`電話番号: ${customer.phone}`);
+        doc.moveDown();
+        // Items Table
+        const tableTop = doc.y;
+        const itemX = 50;
+        const quantityX = 250;
+        const unitPriceX = 350;
+        const amountX = 450;
+        doc.fontSize(10).text('商品名', itemX, tableTop);
+        doc.text('数量', quantityX, tableTop);
+        doc.text('単価', unitPriceX, tableTop);
+        doc.text('金額', amountX, tableTop);
+        let y = tableTop + 25;
+        let totalAmount = 0;
+        delivery.items.forEach(item => {
+            const product = products.find(p => p.id === item.productId);
+            const productName = product ? product.name : '不明な商品';
+            const amount = item.quantity * item.unitPrice;
+            totalAmount += amount;
+            doc.text(productName, itemX, y);
+            doc.text(item.quantity.toString(), quantityX, y);
+            doc.text(item.unitPrice.toString(), unitPriceX, y);
+            doc.text(amount.toString(), amountX, y);
+            y += 25;
+        });
+        // Total
+        doc.moveDown();
+        doc.fontSize(12).text(`合計金額: ${totalAmount.toLocaleString()} 円`, { align: 'right' });
+        doc.end();
+        // Update delivery status to '請求済み' after successful PDF generation
+        deliveries[deliveryIndex].invoiceStatus = '請求済み';
         saveData();
-        res.status(200).json({ message: 'Delivery deleted successfully.' });
     }
-    else {
-        res.status(404).json({ message: 'Delivery not found.' });
-    }
-});
-app.delete('/api/deliveries/:id', (req, res) => {
-    const { id } = req.params;
-    const initialLength = deliveries.length;
-    deliveries = deliveries.filter(delivery => delivery.id !== id);
-    if (deliveries.length < initialLength) {
-        saveData();
-        res.status(200).json({ message: 'Delivery deleted successfully.' });
-    }
-    else {
-        res.status(404).json({ message: 'Delivery not found.' });
+    catch (error) {
+        console.error('Error generating Invoice PDF:', error);
+        res.status(500).send('Error generating Invoice PDF');
     }
 });
 // Reset Endpoints

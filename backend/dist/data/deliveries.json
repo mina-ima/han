@@ -35,7 +35,8 @@
     "notes": "2179 8221341",
     "shippingAddressName": "(株)まほら舎　電子事業部  ",
     "shippingPostalCode": "630-8253",
-    "shippingAddressDetail": "奈良県奈良市内侍原町12-2"
+    "shippingAddressDetail": "奈良県奈良市内侍原町12-2",
+    "status": "発行済み"
   },
   {
     "id": "3",
@@ -53,7 +54,8 @@
     "notes": "2179 8221351",
     "shippingAddressName": "(株)まほら舎　電子事業部  ",
     "shippingPostalCode": "630-8253",
-    "shippingAddressDetail": "奈良県奈良市内侍原町12-2"
+    "shippingAddressDetail": "奈良県奈良市内侍原町12-2",
+    "status": "発行済み"
   },
   {
     "id": "4",
@@ -71,7 +73,8 @@
     "notes": "2241 8233411",
     "shippingAddressName": "(株)まほら舎　電子事業部  ",
     "shippingPostalCode": "630-8253",
-    "shippingAddressDetail": "奈良県奈良市内侍原町12-2"
+    "shippingAddressDetail": "奈良県奈良市内侍原町12-2",
+    "invoiceStatus": "請求済み"
   },
   {
     "id": "5",
