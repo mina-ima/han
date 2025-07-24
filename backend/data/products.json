@@ -1,0 +1,35 @@
+[
+  {
+    "id": "101",
+    "name": "商品X",
+    "unitPrice": 1000,
+    "unit": "個",
+    "shippingName": "東京倉庫",
+    "shippingAddress": "東京都中央区3-3-3",
+    "postalCode": "104-0003",
+    "customer": "1",
+    "notes": "備考1"
+  },
+  {
+    "id": "102",
+    "name": "商品Y",
+    "unitPrice": 2500,
+    "unit": "セット",
+    "shippingName": "本社ビル",
+    "shippingAddress": "東京都港区4-4-4",
+    "postalCode": "105-0004",
+    "customer": "1",
+    "notes": "備考2"
+  },
+  {
+    "id": "201",
+    "name": "商品Z",
+    "unitPrice": 500,
+    "unit": "本",
+    "shippingName": "大阪支社",
+    "shippingAddress": "大阪府吹田市5-5-5",
+    "postalCode": "565-0005",
+    "customer": "2",
+    "notes": "備考3"
+  }
+]
