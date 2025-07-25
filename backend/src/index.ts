@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import { Product, Customer, Delivery, User } from './data/masterData';
+import { Product, Customer, Delivery, User, CompanyInfo } from './data/masterData';
 import { Request } from 'express';
 
 // カスタムリクエスト型を定義してreq.fileを認識させる
@@ -24,6 +24,7 @@ const invoicesFilePath = path.join(dataDirectory, 'invoices.json');
 const deliveriesFilePath = path.join(dataDirectory, 'deliveries.json');
 const customersFilePath = path.join(dataDirectory, 'customers.json');
 const productsFilePath = path.join(dataDirectory, 'products.json');
+const companyInfoFilePath = path.join(dataDirectory, 'companyInfo.json');
 
 app.use(cors({
   origin: 'http://localhost:3000',
@@ -49,6 +50,19 @@ let invoices: Invoice[] = [];
 let deliveries: Delivery[] = [];
 let products: Product[] = [];
 let users: User[] = [];
+let companyInfo: CompanyInfo = {
+  name: '',
+  postalCode: '',
+  address: '',
+  phone: '',
+  fax: '',
+  bankName: '',
+  bankBranch: '',
+  bankAccountType: '',
+  bankAccountNumber: '',
+  bankAccountHolder: '',
+  contactPerson: '',
+};
 let currentVoucherNumber = 1;
 
 // データをファイルから読み込む関数
@@ -78,6 +92,25 @@ const loadData = () => {
     } else {
       products = [];
     }
+    if (fs.existsSync(companyInfoFilePath)) {
+      const companyInfoData = fs.readFileSync(companyInfoFilePath, 'utf-8');
+      companyInfo = companyInfoData ? JSON.parse(companyInfoData) : companyInfo;
+    } else {
+      // If file doesn't exist, use default empty companyInfo
+      companyInfo = {
+        name: '',
+        postalCode: '',
+        address: '',
+        phone: '',
+        fax: '',
+        bankName: '',
+        bankBranch: '',
+        bankAccountType: '',
+        bankAccountNumber: '',
+        bankAccountHolder: '',
+        contactPerson: '',
+      };
+    }
 
     // Update currentVoucherNumber to avoid duplicates
     const maxInvoiceVoucher = Math.max(...invoices.map(i => parseInt(i.voucherNumber.substring(1))), 0);
@@ -96,6 +129,7 @@ const saveData = () => {
     fs.writeFileSync(deliveriesFilePath, JSON.stringify(deliveries, null, 2));
     fs.writeFileSync(customersFilePath, JSON.stringify(customers, null, 2));
     fs.writeFileSync(productsFilePath, JSON.stringify(products, null, 2));
+    fs.writeFileSync(companyInfoFilePath, JSON.stringify(companyInfo, null, 2));
   } catch (error) {
     console.error('Error saving data:', error instanceof Error ? error.message : String(error));
   }
@@ -980,63 +1014,184 @@ app.get('/api/deliveries/:id/pdf', (req, res) => {
   }
 
   try {
-    const doc = new PDFDocument({ size: 'A4', margin: 50 });
+    const doc = new PDFDocument({ size: 'A4', margin: 0 }); // 余白を0に設定
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename=delivery_${id}.pdf`);
 
     doc.pipe(res);
 
-    const fontPath = path.join(__dirname, '../src/fonts/NotoSansJP-Regular.ttf');
+    const fontPath = path.join(__dirname, 'src/fonts/NotoSansJP-Regular.ttf');
     doc.font(fontPath);
 
-    // Header
-    doc.fontSize(20).text('納品書', { align: 'center' });
-    doc.moveDown();
+    const drawDeliveryNote = (isCopy: boolean, startY: number) => {
+      const marginX = 30;
+      const contentWidth = 595 - 2 * marginX; // A4 width - margins
 
-    // Info
-    doc.fontSize(12).text(`納品番号: ${delivery.voucherNumber}`);
-    doc.text(`発行日: ${new Date().toLocaleDateString()}`);
-    doc.text(`納品日: ${delivery.deliveryDate}`);
-    doc.moveDown();
+      // Border (Removed)
 
-    // Customer Info
-    doc.text(`顧客名: ${customer.name}`);
-    doc.text(`住所: ${customer.address}`);
-    doc.text(`電話番号: ${customer.phone}`);
-    doc.moveDown();
+      // Title
+      doc.fontSize(16).text(`納　品　書（${isCopy ? '控' : 'お客様用'}）`, marginX, startY + 20, { align: 'center', width: contentWidth });
 
-    // Items Table
-    const tableTop = doc.y;
-    const itemX = 50;
-    const quantityX = 250;
-    const unitPriceX = 350;
-    const amountX = 450;
+      // Top Right Block (Company Info & Dates)
+      let currentYRight = startY + 20;
+      const rightBlockX = marginX + contentWidth - 250;
+      const rightBlockWidth = 240;
 
-    doc.fontSize(10).text('商品名', itemX, tableTop);
-    doc.text('数量', quantityX, tableTop);
-    doc.text('単価', unitPriceX, tableTop);
-    doc.text('金額', amountX, tableTop);
+      // Delivery Note Number
+      doc.fontSize(8).text(`No：${delivery.voucherNumber}`, rightBlockX, currentYRight, {
+          width: rightBlockWidth,
+          align: 'right'
+      });
+      currentYRight += 15;
 
-    let y = tableTop + 25;
-    let totalAmount = 0;
+      // Issue Date with underline
+      doc.fontSize(8).text(`発行日: ${new Date().toLocaleDateString()}`, rightBlockX, currentYRight, {
+          width: rightBlockWidth,
+          align: 'right',
+          underline: true
+      });
+      currentYRight += 25; // Add more space after the date
 
-    delivery.items.forEach(item => {
-      const product = products.find(p => p.id === item.productId);
-      const productName = product ? product.name : '不明な商品';
-      const amount = item.quantity * item.unitPrice;
-      totalAmount += amount;
+      // Company Info
+      doc.font(path.join(__dirname, 'src/fonts/NotoSansJP-Bold.ttf')).fontSize(10).text(companyInfo.name, rightBlockX, currentYRight, { width: rightBlockWidth, align: 'right' });
+      doc.font(path.join(__dirname, 'src/fonts/NotoSansJP-Regular.ttf')); // Reset to regular font
+      currentYRight += 12;
 
-      doc.text(productName, itemX, y);
-      doc.text(item.quantity.toString(), quantityX, y);
-      doc.text(item.unitPrice.toString(), unitPriceX, y);
-      doc.text(amount.toString(), amountX, y);
-      y += 25;
-    });
+      doc.fontSize(8); // Set font size for calculation
 
-    // Total
-    doc.moveDown();
-    doc.fontSize(12).text(`合計金額: ${totalAmount.toLocaleString()} 円`, { align: 'right' });
+      // Determine the actual starting X position for the address text
+      const addressText = companyInfo.address;
+      const addressCalculatedWidth = doc.widthOfString(addressText);
+      let addressActualStartX = rightBlockX; // Default to left edge of the block if it wraps or is long
+
+      if (addressCalculatedWidth <= rightBlockWidth) {
+        // If the address fits in one line, calculate its actual start X for right alignment
+        addressActualStartX = rightBlockX + rightBlockWidth - addressCalculatedWidth;
+      }
+
+      // Postal Code aligned with the start of the address
+      doc.text(`〒${companyInfo.postalCode}`, addressActualStartX, currentYRight, { width: rightBlockWidth, align: 'left' });
+      currentYRight += 12;
+
+      // Address (right-aligned as before)
+      doc.text(companyInfo.address, rightBlockX, currentYRight, { width: rightBlockWidth, align: 'right' });
+      currentYRight += 12;
+      doc.fontSize(8).text(`TEL：${companyInfo.phone}`, rightBlockX, currentYRight, { width: rightBlockWidth, align: 'right' });
+      currentYRight += 12;
+      doc.fontSize(8).text(`FAX：${companyInfo.fax}`, rightBlockX, currentYRight, { width: rightBlockWidth, align: 'right' });
+      currentYRight += 12;
+      doc.fontSize(8).text(`担当者：${companyInfo.contactPerson}`, rightBlockX, currentYRight, { width: rightBlockWidth, align: 'right' });
+      currentYRight += 12;
+      doc.fontSize(8).text(`${companyInfo.bankName} ${companyInfo.bankBranch} ${companyInfo.bankAccountType} ${companyInfo.bankAccountNumber} ${companyInfo.bankAccountHolder}`, rightBlockX, currentYRight, { width: rightBlockWidth, align: 'right' });
+
+      // Top Left Block (Customer Info)
+      let currentYLeft = startY + 70;
+      const leftBlockX = marginX + 10;
+
+      doc.fontSize(8);
+      doc.text(`お客様コードNo：${customer.id}`, leftBlockX, currentYLeft);
+      currentYLeft += 12;
+      doc.text(`〒${customer.postalCode}`, leftBlockX, currentYLeft);
+      currentYLeft += 12; // Add space here
+      doc.text(`${customer.address}`, leftBlockX, currentYLeft);
+      currentYLeft += 24; // Add 1 extra line break (1 * 12)
+      doc.fontSize(11).text(`${customer.formalName || customer.name}　御中`, leftBlockX, currentYLeft);
+
+      // Message (Adjust Y based on the lower of the two top blocks)
+      const messageY = Math.max(currentYLeft, currentYRight) + 20; // Take the max Y from both blocks and add some padding
+      doc.fontSize(8).text('下記の通り納品致しましたのでご査収ください。', marginX + 10, messageY, { align: 'right', width: contentWidth - 10 });
+
+      // Items Table (Adjust Y based on messageY)
+      const tableTop = messageY + 13; // Adjusted Y to reduce space
+      const col1X = marginX + 10; // 品番・品名
+      const col2X = col1X + 150; // 数量
+      const col3X = col2X + 50;  // 単位
+      const col4X = col3X + 50;  // 単価
+      const col5X = col4X + 70;  // 金額
+      const col6X = col5X + 70;  // 備考
+
+      const col1Width = 140;
+      const col2Width = 40;
+      const col3Width = 40;
+      const col4Width = 60;
+      const col5Width = 60;
+      const col6Width = 100;
+
+      const rowHeight = 14; // Adjusted for more rows
+      const headerY = tableTop;
+      let currentY = headerY + rowHeight;
+
+      // Table Headers
+      doc.rect(col1X - 5, headerY, contentWidth - 10, rowHeight).fillAndStroke('#EEEEEE', '#000000');
+      doc.fillColor('black').fontSize(8); // Adjusted font size
+      doc.text('品番・品名', col1X, headerY + 3, { width: col1Width, align: 'center' });
+      doc.text('数量', col2X, headerY + 3, { width: col2Width, align: 'center' });
+      doc.text('単位', col3X, headerY + 3, { width: col3Width, align: 'center' });
+      doc.text('単価', col4X, headerY + 3, { width: col4Width, align: 'center' });
+      doc.text('金額', col5X, headerY + 3, { width: col5Width, align: 'center' });
+      doc.text('備考', col6X, headerY + 3, { width: col6Width, align: 'center' });
+
+      let totalAmount = 0;
+
+      delivery.items.forEach(item => {
+        const product = products.find(p => p.id === item.productId);
+        const productName = product ? product.name : item.productName || '不明な商品';
+        const amount = (item.quantity || 0) * (item.unitPrice || 0);
+        totalAmount += amount;
+
+        doc.rect(col1X - 5, currentY, contentWidth - 10, rowHeight).stroke();
+        doc.fillColor('black').fontSize(8); // Adjusted font size
+        doc.text(productName, col1X, currentY + 3, { width: col1Width, align: 'left' });
+        doc.text(item.quantity?.toLocaleString() || '', col2X, currentY + 3, { width: col2Width, align: 'right' });
+        doc.text(item.unit || '', col3X, currentY + 3, { width: col3Width, align: 'center' });
+        doc.text(item.unitPrice?.toLocaleString() || '', col4X, currentY + 3, { width: col4Width, align: 'right' });
+        doc.text(amount.toLocaleString(), col5X, currentY + 3, { width: col5Width, align: 'right' });
+        doc.text(item.notes || '', col6X, currentY + 3, { width: col6Width, align: 'center' });
+        currentY += rowHeight;
+      });
+
+      // Fill remaining rows if less than 12 items
+      const minRows = 12;
+      for (let i = delivery.items.length; i < minRows; i++) {
+        doc.rect(col1X - 5, currentY, contentWidth - 10, rowHeight).stroke();
+        currentY += rowHeight;
+      }
+
+      const tableBottomY = currentY; // This is the bottom of the last row drawn
+
+      // Total row background
+      doc.rect(col1X - 5, tableBottomY, contentWidth - 10, rowHeight).fillAndStroke('#EEEEEE', '#000000');
+      doc.fillColor('black').fontSize(8);
+      doc.text('合計', col4X, tableBottomY + 3, { width: col4Width, align: 'center' }); // '合計' in '単価' column
+      doc.text(totalAmount.toLocaleString(), col5X, tableBottomY + 3, { width: col5Width, align: 'right' }); // Total amount in '金額' column
+
+      // Draw vertical lines for the entire table, extending to the bottom of the total row
+      doc.moveTo(col1X - 5, headerY)
+         .lineTo(col1X - 5, tableBottomY + rowHeight) // Leftmost line
+         .moveTo(col2X - 5, headerY)
+         .lineTo(col2X - 5, tableBottomY + rowHeight) // Line between col1 and col2
+         .moveTo(col3X - 5, headerY)
+         .lineTo(col3X - 5, tableBottomY + rowHeight) // Line between col2 and col3
+         .moveTo(col4X - 5, headerY)
+         .lineTo(col4X - 5, tableBottomY + rowHeight) // Line between col3 and col4
+         .moveTo(col5X - 5, headerY)
+         .lineTo(col5X - 5, tableBottomY + rowHeight) // Line between col4 and col5
+         .moveTo(col6X - 5, headerY)
+         .lineTo(col6X - 5, tableBottomY + rowHeight) // Line between col5 and col6
+         .moveTo(col1X - 5 + contentWidth - 10, headerY)
+         .lineTo(col1X - 5 + contentWidth - 10, tableBottomY + rowHeight) // Rightmost line
+         .stroke();
+
+      // 消費税等は「請求書」で一括請求させて頂きます。
+      doc.fontSize(8).text('消費税等は「請求書」で一括請求させて頂きます。', marginX + 10, tableBottomY + rowHeight + 2);
+    };
+
+    // Draw first delivery note (控)
+    drawDeliveryNote(true, 0);
+
+    // Draw second delivery note (お客様用)
+    drawDeliveryNote(false, 420); // A4 height is 842, so roughly half + some spacing
 
     doc.end();
 
@@ -1285,6 +1440,17 @@ app.post('/api/import/deliveries', upload.single('file'), async (req: CustomRequ
       if (err) console.error('Error deleting temporary file:', err);
     });
   }
+});
+
+// Company Info Endpoints
+app.get('/api/company-info', (req, res) => {
+  res.json(companyInfo);
+});
+
+app.post('/api/company-info', (req, res) => {
+  companyInfo = { ...companyInfo, ...req.body };
+  saveData();
+  res.status(200).json(companyInfo);
 });
 
 app.listen(port, () => {

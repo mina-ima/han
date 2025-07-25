@@ -55,3 +55,17 @@ export interface User {
   email: string;
   role: '管理者' | '一般';
 }
+
+export interface CompanyInfo {
+  name: string;
+  postalCode: string;
+  address: string;
+  phone: string;
+  fax: string;
+  bankName: string;
+  bankBranch: string;
+  bankAccountType: string;
+  bankAccountNumber: string;
+  bankAccountHolder: string;
+  contactPerson: string;
+}
