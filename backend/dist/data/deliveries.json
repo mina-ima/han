@@ -17,7 +17,8 @@
     "shippingAddressName": "株式会社　ケイツープリント  ",
     "shippingPostalCode": "570-0043",
     "shippingAddressDetail": "大阪府守口市南寺方東通4-13-22",
-    "status": "発行済み"
+    "status": "発行済み",
+    "invoiceStatus": "請求済み"
   },
   {
     "id": "2",
@@ -36,7 +37,8 @@
     "shippingAddressName": "(株)まほら舎　電子事業部  ",
     "shippingPostalCode": "630-8253",
     "shippingAddressDetail": "奈良県奈良市内侍原町12-2",
-    "status": "発行済み"
+    "status": "発行済み",
+    "invoiceStatus": "請求済み"
   },
   {
     "id": "3",
@@ -55,7 +57,8 @@
     "shippingAddressName": "(株)まほら舎　電子事業部  ",
     "shippingPostalCode": "630-8253",
     "shippingAddressDetail": "奈良県奈良市内侍原町12-2",
-    "status": "発行済み"
+    "status": "発行済み",
+    "invoiceStatus": "請求済み"
   },
   {
     "id": "4",
@@ -94,7 +97,8 @@
     "shippingAddressName": "(株)まほら舎　電子事業部  ",
     "shippingPostalCode": "630-8253",
     "shippingAddressDetail": "奈良県奈良市内侍原町12-2",
-    "status": "発行済み"
+    "status": "発行済み",
+    "invoiceStatus": "請求済み"
   },
   {
     "id": "6",

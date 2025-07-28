@@ -68,4 +68,5 @@ export interface CompanyInfo {
   bankAccountNumber: string;
   bankAccountHolder: string;
   contactPerson: string;
+  invoiceRegistrationNumber?: string;
 }

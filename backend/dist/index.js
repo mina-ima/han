@@ -1118,51 +1118,263 @@ app.get('/api/deliveries/:id/invoice-pdf', (req, res) => {
         return res.status(404).send('Customer not found');
     }
     try {
-        const doc = new pdfkit_1.default({ size: 'A4', margin: 50 });
+        const doc = new pdfkit_1.default({ size: 'A4', margin: 20 });
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `attachment; filename=invoice_${id}.pdf`);
         doc.pipe(res);
         const fontPath = path_1.default.join(__dirname, '../src/fonts/NotoSansJP-Regular.ttf');
         doc.font(fontPath);
         // Header
-        doc.fontSize(20).text('請求書', { align: 'center' });
-        doc.moveDown();
+        const text = '請   求   書';
+        const extraHorizontalSpacePerSide = 3; // 左右にそれぞれ3文字分の余白
+        doc.fontSize(16); // フォントサイズを16ptに設定
+        const textWidth = doc.widthOfString(text);
+        const textHeight = doc.currentLineHeight();
+        const charWidth = textWidth / text.length; // 1文字あたりの幅を概算
+        // ボックスの寸法を計算
+        const boxWidth = textWidth + (extraHorizontalSpacePerSide * 2 * charWidth);
+        const boxHeight = textHeight; // 縦方向は文字の高さに合わせる
+        // 請求書タイトルブロックと発行日のY座標を決定
+        const commonTopY = doc.page.margins.top; // 上部の余白を最小限に
+        // ボックスの位置を計算（中央に配置）
+        const boxX = (doc.page.width - boxWidth) / 2;
+        const boxY = commonTopY; // 共通のY座標を使用
+        // 黒い四角形を描画
+        doc.rect(boxX, boxY, boxWidth, boxHeight).fill('black');
+        // 白い文字でテキストを四角形の中央に描画
+        doc.fillColor('white').text(text, boxX, boxY, {
+            width: boxWidth,
+            align: 'center'
+        });
+        // 後続のテキストのために文字色を黒に戻す
+        doc.fillColor('black');
+        // 発行日を追加 (右上)
+        const issueDateText = `発行日: ${new Date().toLocaleDateString()}`;
+        const issueDateFontSize = 8.4; // 請求書タイトルの6割のサイズ
+        doc.fontSize(issueDateFontSize);
+        // 発行日のY座標も共通のY座標を使用
+        const issueDateY = commonTopY;
+        // 発行日を右寄せで配置
+        const currentYBeforeIssueDate = doc.y; // 現在のdoc.yを保存
+        doc.y = issueDateY;
+        doc.text(issueDateText, { align: 'right' });
+        // 請求書番号を追加 (発行日のすぐ下、同じ8.4pt)
+        const invoiceNumberText = `請求書番号: ${delivery.voucherNumber}`;
+        doc.text(invoiceNumberText, { align: 'right' }); // doc.yは自動的に進む
+        doc.y = currentYBeforeIssueDate; // doc.yを元の位置に戻す
+        // タイトルブロックの後のコンテンツの開始位置を調整
+        doc.y = commonTopY + boxHeight + 10; // タイトルブロックのすぐ下に10ptのスペース
         // Info
-        doc.fontSize(12).text(`請求書番号: ${delivery.voucherNumber}`); // 納品番号を流用
-        doc.text(`発行日: ${new Date().toLocaleDateString()}`);
-        doc.text(`納品日: ${delivery.deliveryDate}`);
-        doc.moveDown();
-        // Customer Info
-        doc.text(`顧客名: ${customer.name}`);
-        doc.text(`住所: ${customer.address}`);
-        doc.text(`電話番号: ${customer.phone}`);
-        doc.moveDown();
-        // Items Table
-        const tableTop = doc.y;
-        const itemX = 50;
-        const quantityX = 250;
-        const unitPriceX = 350;
-        const amountX = 450;
-        doc.fontSize(10).text('商品名', itemX, tableTop);
-        doc.text('数量', quantityX, tableTop);
-        doc.text('単価', unitPriceX, tableTop);
-        doc.text('金額', amountX, tableTop);
-        let y = tableTop + 25;
+        doc.fontSize(8); // 取引先情報のフォントサイズを8ptに設定
+        const leftContentX = doc.page.margins.left + 20; // 左マージンからさらに20pt右にずらす
+        const contentAreaWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+        // Capture the starting Y position for the customer and company info block
+        const infoBlockStartY = doc.y;
+        // --- Customer Information (Left Side) ---
+        let customerInfoCurrentY = infoBlockStartY;
+        // Customer Postal Code (10pt)
+        doc.fontSize(10); // Set font size to 10pt
+        doc.text(`〒${customer.postalCode}`, leftContentX, customerInfoCurrentY);
+        customerInfoCurrentY += doc.currentLineHeight(); // Update Y based on 10pt font height
+        // Customer Address (10pt)
+        doc.text(`${customer.address}`, leftContentX, customerInfoCurrentY);
+        customerInfoCurrentY += doc.currentLineHeight(); // Update Y based on 10pt font height
+        customerInfoCurrentY += doc.currentLineHeight(); // Add an extra line break (equivalent to 10pt height)
+        // Customer Formal Name (12pt)
+        doc.fontSize(12); // Set font size to 12pt
+        doc.text(`${customer.formalName || customer.name}　　御中`, leftContentX, customerInfoCurrentY);
+        customerInfoCurrentY += doc.currentLineHeight(); // Update Y based on 12pt font height
+        doc.fontSize(8); // Reset font size to 8pt for subsequent lines
+        // --- Company Information (Right Side, aligned with customer info's top) ---
+        let companyInfoCurrentY = infoBlockStartY;
+        // Calculate the left X for the company info block to be right-aligned
+        const companyBlockWidth = 200; // Example fixed width for company info block
+        const companyBlockLeftX = doc.page.width - doc.page.margins.right - companyBlockWidth;
+        // Calculate the actual starting X for right-aligned address to align other fields
+        const addressTextWidth = doc.widthOfString(companyInfo.address);
+        const addressActualStartX = companyBlockLeftX + companyBlockWidth - addressTextWidth;
+        // Company Name (12pt)
+        doc.fontSize(12); // フォントサイズを12ptに設定
+        doc.text(companyInfo.name, addressActualStartX, companyInfoCurrentY, { width: companyBlockWidth, align: 'left' }); // 左寄せ
+        companyInfoCurrentY += doc.currentLineHeight();
+        doc.fontSize(8); // フォントサイズを8ptに戻す
+        // Company Postal Code
+        doc.text(`〒${companyInfo.postalCode}`, addressActualStartX, companyInfoCurrentY, { width: companyBlockWidth, align: 'left' }); // 左寄せ
+        companyInfoCurrentY += doc.currentLineHeight();
+        // Company Address
+        doc.text(companyInfo.address, companyBlockLeftX, companyInfoCurrentY, { width: companyBlockWidth, align: 'right' }); // Keep this right-aligned
+        companyInfoCurrentY += doc.currentLineHeight();
+        // Company Phone
+        doc.text(`TEL: ${companyInfo.phone}`, addressActualStartX, companyInfoCurrentY, { width: companyBlockWidth, align: 'left' }); // 左寄せ
+        companyInfoCurrentY += doc.currentLineHeight();
+        // Company FAX
+        doc.text(`FAX: ${companyInfo.fax}`, addressActualStartX, companyInfoCurrentY, { width: companyBlockWidth, align: 'left' }); // 左寄せ
+        companyInfoCurrentY += doc.currentLineHeight();
+        // Company Bank Account
+        doc.text(`${companyInfo.bankName} ${companyInfo.bankBranch} ${companyInfo.bankAccountType} ${companyInfo.bankAccountNumber} ${companyInfo.bankAccountHolder}`, companyBlockLeftX, companyInfoCurrentY, { width: companyBlockWidth, align: 'right' }); // 右寄せ
+        companyInfoCurrentY += doc.currentLineHeight();
+        let yForRegistrationNumber = companyInfoCurrentY; // Capture Y before potential registration number
+        if (companyInfo.invoiceRegistrationNumber) {
+            doc.text(`登録番号: ${companyInfo.invoiceRegistrationNumber}`, addressActualStartX, companyInfoCurrentY, { width: companyBlockWidth, align: 'left' }); // 左寄せ
+            companyInfoCurrentY += doc.currentLineHeight();
+        }
+        // Print customer ID at yForRegistrationNumber
+        doc.fontSize(8).text(`お客様コードNo：${customer.id}`, leftContentX, yForRegistrationNumber, { width: companyBlockWidth, align: 'left' });
+        // doc.y を、取引先情報と自社情報のブロックの最下部に合わせる
+        // どちらかY座標が大きい方に合わせる
+        doc.y = Math.max(doc.y, companyInfoCurrentY);
+        // Add 2 line breaks after the customer/company info block
+        doc.moveDown(2);
+        // Add messages
+        const messageLineY = doc.y; // Capture the current Y for this line
+        doc.fontSize(8).text('毎度ありがとうございます。下記の通り御請求申し上げます。', leftContentX, messageLineY, { align: 'left' });
+        doc.text('振込手数料は貴社にてご負担願います。', doc.page.margins.left, messageLineY, { align: 'right', width: contentAreaWidth });
+        // Tables below messages
+        let currentTableY = doc.y; // Start directly below the messages
+        const tableSpacing = 0; // Space between the two tables
+        const colWidth1 = 30;
+        const colWidth2 = 68.5256;
+        const colWidth3 = 68.5256;
+        const singleTableWidth = colWidth1 + colWidth2 + colWidth3;
+        const row1Height = 12;
+        const row2Height = 28;
+        const tableHeight = row1Height + row2Height;
+        const cornerRadius = 5; // Radius for rounded corners
+        // Function to draw a 2x3 table with rounded outer corners
+        const drawTable = (startX, startY, rowData) => {
+            // Draw the outer rounded rectangle for the entire table
+            doc.roundedRect(startX, startY, singleTableWidth, tableHeight, cornerRadius).stroke();
+            // Draw internal horizontal lines
+            doc.moveTo(startX, startY + row1Height)
+                .lineTo(startX + singleTableWidth, startY + row1Height)
+                .stroke();
+            // Draw internal vertical lines
+            const vLine1X = startX + colWidth1;
+            const vLine2X = startX + colWidth1 + colWidth2;
+            doc.moveTo(vLine1X, startY)
+                .lineTo(vLine1X, startY + tableHeight)
+                .stroke();
+            doc.moveTo(vLine2X, startY)
+                .lineTo(vLine2X, startY + tableHeight)
+                .stroke();
+            // Add content to the top row
+            doc.fontSize(8); // Set font size for table content
+            const textPadding = 5;
+            const topRowTextY = startY + (row1Height - doc.currentLineHeight()) / 2 + 1;
+            doc.text('税率', startX + textPadding, topRowTextY, { width: colWidth1 - (textPadding * 2), align: 'center' });
+            doc.text('対象金額計', vLine1X + textPadding, topRowTextY, { width: colWidth2 - (textPadding * 2), align: 'center' });
+            doc.text('消費税等', vLine2X + textPadding, topRowTextY, { width: colWidth3 - (textPadding * 2), align: 'center' });
+            // Add content to the second row
+            const bottomRowTextY = startY + row1Height + (row2Height - doc.currentLineHeight()) / 2 + 1;
+            doc.text(rowData[0], startX + textPadding, bottomRowTextY, { width: colWidth1 - (textPadding * 2), align: 'center' });
+            doc.text(rowData[1], vLine1X + textPadding, bottomRowTextY, { width: colWidth2 - (textPadding * 2), align: 'center' });
+            doc.text(rowData[2], vLine2X + textPadding, bottomRowTextY, { width: colWidth3 - (textPadding * 2), align: 'center' });
+            return startY + tableHeight; // Return the Y position after drawing the table
+        };
+        // Draw first table
+        drawTable(doc.page.margins.left, currentTableY, ['10', '', '']);
+        // Draw second table (next to the first one)
+        drawTable(doc.page.margins.left + singleTableWidth + tableSpacing, currentTableY, ['8', '', '']);
+        // Draw the new 2x1 table on the right
+        const newTableReferenceText = '振込手数料は貴社にてご負担願います。';
+        doc.fontSize(8); // Ensure correct font size for width calculation
+        const newTableWidth = doc.widthOfString(newTableReferenceText);
+        const newTableX = doc.page.width - doc.page.margins.right - newTableWidth;
+        // Draw outer rectangle and horizontal divider
+        doc.roundedRect(newTableX, currentTableY, newTableWidth, tableHeight, cornerRadius).stroke();
+        doc.moveTo(newTableX, currentTableY + row1Height)
+            .lineTo(newTableX + newTableWidth, currentTableY + row1Height)
+            .stroke();
+        // Fill top cell with black
+        doc.rect(newTableX + 1, currentTableY + 1, newTableWidth - 2, row1Height - 2).fill('black');
+        // Add content to the top row (white text)
+        const newTableTopTextY = currentTableY + (row1Height - doc.currentLineHeight()) / 2 + 1;
+        doc.fillColor('white').text('今回御請求額', newTableX, newTableTopTextY, { width: newTableWidth, align: 'center' });
+        // Reset color and add content to the bottom row
+        const newTableBottomTextY = currentTableY + row1Height + (row2Height - doc.currentLineHeight()) / 2 + 1;
+        doc.fillColor('black').text('', newTableX, newTableBottomTextY, { width: newTableWidth, align: 'center' });
+        // Detailed Items Table
+        const detailTableY = doc.y + 15;
+        const detailTableLeftX = doc.page.margins.left;
+        const detailTableWidth = doc.page.width - doc.page.margins.left - doc.page.margins.right;
+        const detailRowHeight = 20;
+        doc.fontSize(8);
+        // Define Columns
+        const cols = [
+            { x: detailTableLeftX, width: 48, header: '伝票日付', key: 'deliveryDate' },
+            { x: detailTableLeftX + 48, width: 48, header: '伝票No.', key: 'voucherNumber' },
+            { x: detailTableLeftX + 96, width: 164, header: '品番・品名', key: 'product' },
+            { x: detailTableLeftX + 260, width: 40, header: '数量', key: 'quantity' },
+            { x: detailTableLeftX + 300, width: 30, header: '単位', key: 'unit' },
+            { x: detailTableLeftX + 330, width: 40, header: '単価', key: 'unitPrice' },
+            { x: detailTableLeftX + 370, width: 30, header: '税区分', key: 'taxRate' },
+            { x: detailTableLeftX + 400, width: 55, header: '税抜金額', key: 'amount' },
+            { x: detailTableLeftX + 455, width: detailTableWidth - 455, header: '備考', key: 'notes' }
+        ];
+        // Draw Header
+        let currentY = detailTableY;
+        doc.rect(detailTableLeftX, currentY, detailTableWidth, detailRowHeight).fillAndStroke('#DDDDDD', '#000000');
+        doc.fillColor('black');
+        cols.forEach((col, index) => {
+            doc.text(col.header, col.x + 2, currentY + 6, { width: col.width - 4, align: 'center' });
+            if (index < cols.length - 1) { // Draw vertical line for all but the last column
+                doc.moveTo(col.x + col.width, currentY)
+                    .lineTo(col.x + col.width, currentY + detailRowHeight)
+                    .stroke('#000000');
+            }
+        });
+        currentY += detailRowHeight;
+        // Draw Rows
         let totalAmount = 0;
         delivery.items.forEach(item => {
+            var _a, _b;
             const product = products.find(p => p.id === item.productId);
-            const productName = product ? product.name : '不明な商品';
-            const amount = item.quantity * item.unitPrice;
+            const amount = (item.quantity || 0) * (item.unitPrice || 0);
             totalAmount += amount;
-            doc.text(productName, itemX, y);
-            doc.text(item.quantity.toString(), quantityX, y);
-            doc.text(item.unitPrice.toString(), unitPriceX, y);
-            doc.text(amount.toString(), amountX, y);
-            y += 25;
+            const rowData = {
+                deliveryDate: delivery.deliveryDate,
+                voucherNumber: delivery.voucherNumber,
+                product: product ? product.name : (item.productName || '不明な商品'),
+                quantity: ((_a = item.quantity) === null || _a === void 0 ? void 0 : _a.toLocaleString()) || '',
+                unit: item.unit || '',
+                unitPrice: ((_b = item.unitPrice) === null || _b === void 0 ? void 0 : _b.toLocaleString()) || '',
+                taxRate: '10%', // Placeholder
+                amount: amount.toLocaleString(),
+                notes: item.notes || ''
+            };
+            // Calculate row height based on product name length
+            const productTextHeight = doc.heightOfString(rowData.product, { width: cols[2].width - 4 });
+            const dynamicRowHeight = Math.max(detailRowHeight, productTextHeight + 8);
+            doc.rect(detailTableLeftX, currentY, detailTableWidth, dynamicRowHeight).stroke('#000000');
+            cols.forEach(col => {
+                const key = col.key;
+                doc.text(rowData[key], col.x + 2, currentY + 4, {
+                    width: col.width - 4,
+                    align: (key === 'deliveryDate' || key === 'voucherNumber' || key === 'quantity' || key === 'unitPrice' || key === 'amount') ? 'right' :
+                        (key === 'taxRate' || key === 'unit') ? 'center' : 'left'
+                });
+            });
+            // Draw vertical lines for the row
+            cols.forEach(col => {
+                doc.moveTo(col.x, currentY).lineTo(col.x, currentY + dynamicRowHeight).stroke('#000000');
+            });
+            doc.moveTo(detailTableLeftX + detailTableWidth, currentY).lineTo(detailTableLeftX + detailTableWidth, currentY + dynamicRowHeight).stroke('#000000');
+            currentY += dynamicRowHeight;
         });
-        // Total
-        doc.moveDown();
-        doc.fontSize(12).text(`合計金額: ${totalAmount.toLocaleString()} 円`, { align: 'right' });
+        // Fill remaining space with empty rows
+        const bottomMargin = doc.page.margins.bottom;
+        const availableHeightForEmptyRows = doc.page.height - bottomMargin - currentY;
+        const emptyRowHeight = detailRowHeight; // Use the base row height for empty rows
+        const numberOfEmptyRows = Math.floor(availableHeightForEmptyRows / emptyRowHeight);
+        for (let i = 0; i < numberOfEmptyRows; i++) {
+            doc.rect(detailTableLeftX, currentY, detailTableWidth, emptyRowHeight).stroke('#000000');
+            // Draw vertical lines for empty row
+            cols.forEach(col => {
+                doc.moveTo(col.x, currentY).lineTo(col.x, currentY + emptyRowHeight).stroke('#000000');
+            });
+            doc.moveTo(detailTableLeftX + detailTableWidth, currentY).lineTo(detailTableLeftX + detailTableWidth, currentY + emptyRowHeight).stroke('#000000');
+            currentY += emptyRowHeight;
+        }
         doc.end();
         // Update delivery status to '請求済み' after successful PDF generation
         deliveries[deliveryIndex].invoiceStatus = '請求済み';
