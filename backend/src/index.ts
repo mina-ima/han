@@ -641,6 +641,7 @@ app.post('/api/deliveries', (req, res) => {
     notes: '', // デフォルト値を追加
     status: '未発行', // デフォルト値を追加
     invoiceStatus: '未請求', // デフォルト値を追加
+    taxCategory: req.body.taxCategory || '', // Add tax category
   };
   deliveries.push(newDelivery);
   saveData();
@@ -648,7 +649,7 @@ app.post('/api/deliveries', (req, res) => {
 });
 
 app.post('/api/customers', (req, res) => {
-  const newCustomer = req.body;
+  const newCustomer: Customer = { ...req.body, rounding: req.body.rounding || '四捨五入' };
   const maxIdNum = customers.reduce((max, customer) => {
     const idNum = parseInt(customer.id.replace('C', ''));
     return isNaN(idNum) ? max : Math.max(max, idNum);
@@ -677,7 +678,7 @@ app.put('/api/customers/:id', (req, res) => {
   const customerIndex = customers.findIndex(c => c.id === id);
 
   if (customerIndex > -1) {
-    customers[customerIndex] = { ...customers[customerIndex], ...updatedCustomerData };
+    customers[customerIndex] = { ...customers[customerIndex], ...updatedCustomerData, rounding: updatedCustomerData.rounding || customers[customerIndex].rounding };
     saveData();
     res.status(200).json(customers[customerIndex]);
   } else {
@@ -895,7 +896,7 @@ app.post('/api/import/products', upload.single('file'), async (req: CustomReques
 });
 
 app.post('/api/products', (req, res) => {
-  const newProduct = req.body;
+  const newProduct = { ...req.body, taxCategory: req.body.taxCategory || '10' };
   const maxIdNum = products.reduce((max, product) => {
     const idNum = parseInt(product.id.replace('P', ''));
     return isNaN(idNum) ? max : Math.max(max, idNum);
@@ -912,7 +913,7 @@ app.put('/api/products/:id', (req, res) => {
   const productIndex = products.findIndex(p => p.id === id);
 
   if (productIndex > -1) {
-    products[productIndex] = { ...products[productIndex], ...updatedProductData };
+    products[productIndex] = { ...products[productIndex], ...updatedProductData, taxCategory: updatedProductData.taxCategory || products[productIndex].taxCategory };
     saveData();
     res.status(200).json(products[productIndex]);
   } else {
@@ -984,6 +985,7 @@ app.put('/api/deliveries/:id', (req, res) => {
         ...updatedDeliveryData,
         items: updatedItems,
         customerId: updatedCustomerId,
+        taxCategory: updatedDeliveryData.taxCategory || currentDelivery.taxCategory,
       };
       saveData();
       res.status(200).json(deliveries[deliveryIndex]);
@@ -1460,13 +1462,13 @@ app.get('/api/deliveries/:id/invoice-pdf', (req, res) => {
     const cols = [
         { x: detailTableLeftX, width: 48, header: '伝票日付', key: 'deliveryDate' },
         { x: detailTableLeftX + 48, width: 48, header: '伝票No.', key: 'voucherNumber' },
-        { x: detailTableLeftX + 96, width: 164, header: '品番・品名', key: 'product' },
-        { x: detailTableLeftX + 260, width: 40, header: '数量', key: 'quantity' },
-        { x: detailTableLeftX + 300, width: 30, header: '単位', key: 'unit' },
-        { x: detailTableLeftX + 330, width: 40, header: '単価', key: 'unitPrice' },
-        { x: detailTableLeftX + 370, width: 30, header: '税区分', key: 'taxRate' },
-        { x: detailTableLeftX + 400, width: 55, header: '税抜金額', key: 'amount' },
-        { x: detailTableLeftX + 455, width: detailTableWidth - 455, header: '備考', key: 'notes' }
+        { x: detailTableLeftX + 96, width: 144, header: '品番・品名', key: 'product' },
+        { x: detailTableLeftX + 240, width: 40, header: '数量', key: 'quantity' },
+        { x: detailTableLeftX + 280, width: 30, header: '単位', key: 'unit' },
+        { x: detailTableLeftX + 310, width: 40, header: '単価', key: 'unitPrice' },
+        { x: detailTableLeftX + 350, width: 40, header: '税区分', key: 'taxCategory' }, // Changed width to 40
+        { x: detailTableLeftX + 390, width: 55, header: '税抜金額', key: 'amount' },
+        { x: detailTableLeftX + 445, width: detailTableWidth - 445, header: '備考', key: 'notes' }
     ];
 
     // Draw Header
@@ -1497,7 +1499,7 @@ app.get('/api/deliveries/:id/invoice-pdf', (req, res) => {
             quantity: item.quantity?.toLocaleString() || '',
             unit: item.unit || '',
             unitPrice: item.unitPrice?.toLocaleString() || '',
-            taxRate: '10%', // Placeholder
+            taxCategory: delivery.taxCategory || '', // Use delivery.taxCategory
             amount: amount.toLocaleString(),
             notes: item.notes || ''
         };
@@ -1512,7 +1514,7 @@ app.get('/api/deliveries/:id/invoice-pdf', (req, res) => {
             doc.text(rowData[key], col.x + 2, currentY + 4, {
                 width: col.width - 4,
                 align: (key === 'deliveryDate' || key === 'voucherNumber' || key === 'quantity' || key === 'unitPrice' || key === 'amount') ? 'right' :
-                       (key === 'taxRate' || key === 'unit') ? 'center' : 'left'
+                       (key === 'taxCategory' || key === 'unit') ? 'center' : 'left'
             });
         });
 

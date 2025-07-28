@@ -8,6 +8,7 @@ export interface Product {
   customer: string; // 取引先ID
   notes: string;
   shippingName?: string;
+  taxCategory?: string; // Add tax category
 }
 
 export interface Customer {
@@ -22,6 +23,7 @@ export interface Customer {
   email: string;
   contactPerson: string;
   invoiceDeliveryMethod: string; // 請求書送付方法 (例: 郵送, メール, Web)
+  rounding?: '切り上げ' | '切り捨て' | '四捨五入'; // 端数処理を追加
 }
 
 export interface DeliveryItem {
@@ -47,6 +49,7 @@ export interface Delivery {
   shippingAddressName?: string;
   shippingPostalCode?: string;
   shippingAddressDetail?: string;
+  taxCategory?: string; // Add tax category
 }
 
 export interface User {
